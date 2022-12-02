@@ -9,6 +9,7 @@
 #include "pcm.h"
 #include "pcm_draw_area.h"
 #include "pahandler.h"
+#include "xwindow.h"
 
 
 using namespace std;
@@ -76,6 +77,8 @@ class SynthWindow : public Gtk::Window
 
 int main(int argc, char *argv[])
 {  
-  auto app = Gtk::Application::create("org.gtkmm.examples.base");
-  return app->make_window_and_run<SynthWindow>(argc, argv);
+  XWindow();
+  return 0;
+  //auto app = Gtk::Application::create("org.gtkmm.examples.base");
+  //return app->make_window_and_run<SynthWindow>(argc, argv);
 }
