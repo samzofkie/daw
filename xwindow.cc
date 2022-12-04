@@ -1,47 +1,74 @@
 #include <iostream>
-#include <thread>
-#include <chrono>
+
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+
+#include <cairo.h>
+#include <cairo-xlib.h>
+
 #include "xwindow.h"
+
 
 using namespace std;
 
-XWindow::XWindow()
+XWindow::XWindow() :
+  width(500), height(500)
 {
-  Display * d = XOpenDisplay(NULL);
-  if (d==NULL) {
-    cout << "XOpenDisplay(NULL) failed!" << endl;
+  if ((display = XOpenDisplay(NULL)) == NULL) {
+    cout << "XOpenDisplay() failed!\n";
     exit(1);
   }
 
-  int screen = DefaultScreen(d);
+  screen = DefaultScreen(display);
 
-  XSetWindowAttributes attrs;
+  window = XCreateSimpleWindow(display, DefaultRootWindow(display),
+                               0, 0, width, height, 0, 0, 0);
 
-  attrs.event_mask
-    = SubstructureRedirectMask // handle child window requests      (MapRequest)
-    | SubstructureNotifyMask   // handle child window notifications (DestroyNotify)
-    | StructureNotifyMask      // handle container notifications    (ConfigureNotify)
-    | ExposureMask             // handle container redraw           (Expose)
-    ;
-  attrs.do_not_propagate_mask = 0; // do not hide any events from child window
-  
-  unsigned long attrs_mask = CWEventMask  // enable attrs.event_mask
-    | NoEventMask  // enable attrs.do_not_propagate_mask
-    | CWBackPixel  // enable attrs.background_pixel
-    ;
+  XSelectInput(display, window, ButtonPressMask | KeyPressMask);
+  XMapWindow(display, window);
 
-  int width = 400, height = 200;
-  Window w = XCreateWindow(d, RootWindow(d, screen), 0, 0, width, height,
-                           1, CopyFromParent, InputOutput, CopyFromParent, attrs_mask, &attrs);
+  c_surf = cairo_xlib_surface_create(display,
+                               window, DefaultVisual(display, screen),
+                               width, height);
+  cairo_xlib_surface_set_size(c_surf, width, height);
 
-  XMapWindow(d, w);
-  XStoreName(d, w, "MyXlibWindow!");
-  
-  this_thread::sleep_for(chrono::seconds(2));
+  cr = cairo_create(c_surf);
+   
+  initial_draw();
 
-  XCloseDisplay(d);
-
+  event_loop();
 }
 
-XWindow::~XWindow(){}
+void XWindow::initial_draw()
+{
+  cairo_set_source_rgb(cr, 1, 0, 0);
+  cairo_rectangle (cr, 100, 100, 200, 200);
+  cairo_fill(cr);
+}
+
+void XWindow::event_loop()
+{
+  char keybuf[8];
+  KeySym key;
+  XEvent e;
+  for (;;) {
+    XNextEvent(display, &e);
+    switch (e.type)
+    {
+      case ButtonPress:
+        printf("Click! @ (%d, %d)\n", e.xbutton.x, e.xbutton.y);
+        break;
+      case KeyPress:
+        XLookupString(&e.xkey, keybuf, sizeof(keybuf), &key, NULL);
+        printf("KeyPress string: %s\n", keybuf);
+        break;
+      default:
+        cout << "Unhandled XEvent.type: " << e.type << endl;
+    }
+  }
+}
+
+XWindow::~XWindow()
+{
+  XCloseDisplay(display);
+}
