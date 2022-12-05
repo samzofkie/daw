@@ -26,11 +26,15 @@ XWindow::XWindow() :
 
   XSelectInput(display, window, ButtonPressMask | KeyPressMask | ExposureMask);
   XMapWindow(display, window);
-
+  
+  // The cairo surface potentially needs to be as big as 
+  // the largest screen in the display.
+  int surface_width = DisplayWidth(display, screen);
+  int surface_height = DisplayHeight(display, screen);
   c_surf = cairo_xlib_surface_create(display,
                                window, DefaultVisual(display, screen),
-                               width, height);
-  cairo_xlib_surface_set_size(c_surf, width, height);
+                               surface_width, surface_height);
+  cairo_xlib_surface_set_size(c_surf, surface_width, surface_height);
 
   cr = cairo_create(c_surf);
    
@@ -39,13 +43,15 @@ XWindow::XWindow() :
   event_loop();
 }
 
+
 void XWindow::initial_draw()
 {
   // Draw tracks 
-  cairo_set_source_rgb(cr, 0.5, 0.5, 1);
+  cairo_set_source_rgb(cr, 0.02, 0.05, 0.3);
   int track_height = 95;
   int space_between_tracks = 5;
   int tot = track_height + space_between_tracks;
+  
   for (int i=0; i*tot < height; i++) {
     cairo_rectangle(cr, 0, i*tot, 
                     width, track_height);
@@ -55,13 +61,14 @@ void XWindow::initial_draw()
   // Draw vertical grid lines
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
-  int nlines=50;
-  for (int i=0; i<nlines; i++) {
-    cairo_move_to(cr, (width/nlines)*i, 0);
-    cairo_line_to(cr, (width/nlines)*i, height);
+  int line_space = 50;
+  for (int i=0; i<width; i+=line_space) {
+    cairo_move_to(cr, i, 0);
+    cairo_line_to(cr, i, height);
   }
   cairo_stroke(cr);
 }
+
 
 void XWindow::event_loop()
 {
@@ -80,9 +87,12 @@ void XWindow::event_loop()
         printf("KeyPress string: %s\n", keybuf);
         break;
       case Expose:
-        printf("Expose! from (%d, %d) to (%d,%d)\n",
+        /*printf("Expose! from (%d, %d) to (%d,%d)\n",
                 e.xexpose.x, e.xexpose.y, e.xexpose.width,
-                e.xexpose.height);
+                e.xexpose.height);*/
+        width = e.xexpose.width;
+        height = e.xexpose.height;
+        initial_draw();
         break;
       default:
         cout << "Unhandled XEvent.type: " << e.type << endl;
