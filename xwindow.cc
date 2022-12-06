@@ -35,38 +35,55 @@ XWindow::XWindow() :
                                window, DefaultVisual(display, screen),
                                surface_width, surface_height);
   cairo_xlib_surface_set_size(c_surf, surface_width, surface_height);
-
   cr = cairo_create(c_surf);
-   
-  initial_draw();
-
   event_loop();
 }
 
 
 void XWindow::initial_draw()
 {
-  // Draw tracks 
-  cairo_set_source_rgb(cr, 0.02, 0.05, 0.3);
   int track_height = 95;
   int space_between_tracks = 5;
   int tot = track_height + space_between_tracks;
-  
-  for (int i=0; i*tot < height; i++) {
-    cairo_rectangle(cr, 0, i*tot, 
-                    width, track_height);
-    cairo_fill(cr);
-  }
-    
+  int track_head_width = 125;
+
   // Draw vertical grid lines
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
   int line_space = 50;
-  for (int i=0; i<width; i+=line_space) {
+  for (int i=track_head_width; i<width; i+=line_space) {
     cairo_move_to(cr, i, 0);
     cairo_line_to(cr, i, height);
   }
   cairo_stroke(cr);
+  
+  // Horizontal lines  
+  for (int i=0; i*tot < height; i++) {
+    cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+    cairo_move_to(cr, track_head_width, (i+1)*tot - space_between_tracks / 2);
+    cairo_line_to(cr, width, i*tot + track_height);
+    cairo_stroke(cr);
+  }
+  
+  // Track heads steel fill
+  cairo_surface_t *steel = cairo_image_surface_create_from_png("data/steel.png");
+  for (int i=0; i*tot < height; i++) {
+    cairo_move_to(cr, track_head_width + 10, i*tot);
+    cairo_line_to(cr, 3, i*tot);
+    cairo_line_to(cr, 3, i*tot + track_height);
+    cairo_line_to(cr, track_head_width + 10, i*tot + track_height);
+    cairo_curve_to(cr, track_head_width + 10, i*tot + track_height,
+                       track_head_width - 30, i*tot + track_height / 2,
+                       track_head_width + 10, i*tot);
+    cairo_close_path(cr);
+    
+    cairo_set_source_surface(cr, steel, 0, i*tot);
+    cairo_fill_preserve(cr);
+
+    cairo_set_source_rgb(cr, 1, 1, 0);
+    cairo_stroke(cr);
+  } 
+  cairo_surface_destroy(steel);
 }
 
 
