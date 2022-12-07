@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -16,7 +17,8 @@ XWindow::XWindow() :
   window_width(1000), window_height(1000), header_height(100),
   vertical_grid_line_space(50),
   track_size_info({95, 5, 175}),
-  steel_fill(cairo_image_surface_create_from_png("data/steel.png"))
+  steel_fill(cairo_image_surface_create_from_png("data/steel.png")),
+  tempo(120)
 {
   // Do all the display / window initing
   if ((display = XOpenDisplay(NULL)) == NULL) {
@@ -45,8 +47,7 @@ XWindow::XWindow() :
   for (int i=0; i<3; i++)
     tracks.push_back(new Track);
 
-  PCM snare ("./snare.wav");
-
+  tracks[0]->add("./snare.wav");
 
   event_loop();
 }
@@ -54,6 +55,8 @@ XWindow::XWindow() :
 
 void XWindow::draw_header()
 {
+
+
   cairo_set_source_rgb(cr, 0, 0, 0.01);
   cairo_rectangle(cr, 0, 0, window_width, header_height);
   cairo_fill(cr);
@@ -76,14 +79,14 @@ void XWindow::draw_vertical_grid_lines()
 void XWindow::draw_tracks()
 {
   int height = track_size_info.track_height;
-  int space = track_size_info.space_between_tracks;
+  double space = track_size_info.space_between_tracks;
   int head_width = track_size_info.track_head_width;
   int total = height + space;
 
   // Horizontal lines
   for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
-    int y = i*total + height - space/2 + header_height;
-    cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+    int y = i*total + total - space/2 + header_height;
+    cairo_set_source_rgb(cr, 1, 1, 1);
     cairo_move_to(cr, head_width, y);
     cairo_line_to(cr, window_width, y);
     cairo_stroke(cr);
@@ -109,6 +112,19 @@ void XWindow::draw_tracks()
   }
 }
 
+void XWindow::draw_pcms()
+{
+  double offset = 2;
+  for (vector<Track*>::size_type i=0; i<tracks.size(); i++) {
+    for (vector<PCM*>::size_type j=0; j<tracks[i]->pcms.size(); j++) {
+      cairo_set_source_rgb(cr, 0, 0, 1);
+      rounded_rect(cr, track_size_info.track_head_width, header_height + offset,
+                       300, track_size_info.track_height - offset);
+      cairo_fill(cr);
+    }
+  }
+}
+
 
 void XWindow::event_loop()
 {
@@ -129,9 +145,12 @@ void XWindow::event_loop()
       case Expose:
         window_width = e.xexpose.width;
         window_height = e.xexpose.height;
+        
         draw_header();
         draw_vertical_grid_lines();
+        draw_pcms();
         draw_tracks();
+        
         break;
       default:
         cout << "Unhandled XEvent.type: " << e.type << endl;
@@ -146,4 +165,25 @@ XWindow::~XWindow()
   for (auto track : tracks)
     delete track;
   cairo_surface_destroy(steel_fill);
+}
+
+
+void rounded_rect(cairo_t *cr, double x, double y,
+                               double w, double h)
+{
+  double radius = 10; 
+  cairo_move_to(cr, x+radius, y);
+  cairo_line_to(cr, x+w-radius, y);
+  cairo_arc(cr, x+w-radius, y+radius,
+            radius, M_PI/-2.0, 0);
+  cairo_line_to(cr, x+w, y+h-radius);
+  cairo_arc(cr, x+w-radius, y+h-radius,
+            radius, 0, M_PI/2.0);
+  cairo_line_to(cr, x+radius, y+h);
+  cairo_arc(cr, x+radius, y+h-radius,
+            radius, M_PI/2.0, M_PI);
+  cairo_line_to(cr, x, y+radius);
+  cairo_arc(cr, x+radius, y+radius,
+            radius, M_PI, M_PI/-2.0);
+  cairo_close_path(cr);
 }

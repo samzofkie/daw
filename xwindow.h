@@ -26,11 +26,16 @@ class XWindow
     void draw_header();
     void draw_vertical_grid_lines();
     void draw_tracks();
+    void draw_pcms();
     void event_loop();
+
+    double tempo;
   
   public:
     XWindow();
     ~XWindow(); 
 };
+
+void rounded_rect(cairo_t *cr, double, double, double, double);
 
 #endif //XWINDOW_H

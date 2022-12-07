@@ -2,6 +2,7 @@
 #define TRACK_H
 
 #include <vector>
+#include <cairo.h>
 #include "pcm.h"
 
 class Track
@@ -10,8 +11,6 @@ class Track
     Track();
     ~Track();
     void add(const char*);
-
-  private:
     std::vector<PCM*> pcms;
 };
 
