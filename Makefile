@@ -1,6 +1,6 @@
 CXX := g++
 opts:= -Wall -lm -std=c++17 `pkg-config --cflags --libs gtkmm-4.0 cairomm-1.0 libpulse-simple x11 cairo`
-objs := scxx.o pcm_draw_area.o pahandler.o pcm.o xwindow.o
+objs := scxx.o pcm_draw_area.o pahandler.o pcm.o xwindow.o track.o
 
 synth: $(objs)
 	g++ $(objs) -o synth $(opts)
@@ -19,3 +19,6 @@ pcm.o: pcm.h pcm.cc
 
 xwindow.o: xwindow.h xwindow.cc
 	g++ -c xwindow.cc $(opts)
+
+track.o: track.h track.cc
+	g++ -c track.cc $(opts)
