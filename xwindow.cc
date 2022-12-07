@@ -7,6 +7,7 @@
 #include <cairo-xlib.h>
 
 #include "xwindow.h"
+#include "pcm.h"
 
 
 using namespace std;
@@ -17,17 +18,15 @@ XWindow::XWindow() :
   track_size_info({95, 5, 175}),
   steel_fill(cairo_image_surface_create_from_png("data/steel.png"))
 {
+  // Do all the display / window initing
   if ((display = XOpenDisplay(NULL)) == NULL) {
     cout << "XOpenDisplay() failed!\n";
     exit(1);
   }
-
   screen = DefaultScreen(display);
-
   window = XCreateSimpleWindow(display, DefaultRootWindow(display),
                                0, 0, window_width, window_height, 
                                0, 0, 0);
-
   XSelectInput(display, window, ButtonPressMask | KeyPressMask | ExposureMask);
   XMapWindow(display, window);
   
@@ -41,8 +40,13 @@ XWindow::XWindow() :
   cairo_xlib_surface_set_size(c_surf, surface_width, surface_height);
   cr = cairo_create(c_surf);
 
+
+  // Create tracks
   for (int i=0; i<3; i++)
     tracks.push_back(new Track);
+
+  PCM snare ("./snare.wav");
+
 
   event_loop();
 }
@@ -50,7 +54,7 @@ XWindow::XWindow() :
 
 void XWindow::draw_header()
 {
-  cairo_set_source_rgb(cr, 0.05, 0.05, 0.2);
+  cairo_set_source_rgb(cr, 0, 0, 0.01);
   cairo_rectangle(cr, 0, 0, window_width, header_height);
   cairo_fill(cr);
 }
@@ -77,7 +81,7 @@ void XWindow::draw_tracks()
   int total = height + space;
 
   // Horizontal lines
-  for (int i=0; i < tracks.size(); i++) {
+  for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
     int y = i*total + height - space/2 + header_height;
     cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
     cairo_move_to(cr, head_width, y);
@@ -86,7 +90,7 @@ void XWindow::draw_tracks()
   }
 
   // Heads
-  for (int i=0; i < tracks.size(); i++) {
+  for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
     int y = i*total + header_height;
     cairo_move_to(cr, head_width + 10, y);
     cairo_line_to(cr, 3, y);

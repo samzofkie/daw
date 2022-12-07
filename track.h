@@ -1,12 +1,18 @@
 #ifndef TRACK_H
 #define TRACK_H
 
+#include <vector>
+#include "pcm.h"
+
 class Track
 {
   public:
     Track();
     ~Track();
-    void render();
+    void add(const char*);
+
+  private:
+    std::vector<PCM*> pcms;
 };
 
 struct TrackSizeInfo

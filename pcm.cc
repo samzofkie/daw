@@ -67,7 +67,7 @@ void PCM::read_wav_header(ifstream& ifs)
     byte_build<uint32_t>(40,43,header_bytes)
   };
   
-  print_wav_header(header);
+  //print_wav_header(header);
 }
 
 

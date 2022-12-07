@@ -1,14 +1,21 @@
 #include <iostream>
 #include "track.h"
+#include "pcm.h"
 
 using namespace std;
 
 
-Track::Track()
+Track::Track(){}
+
+
+void Track::add(const char* filename)
 {
-  cout << "track!\n";
+  pcms.push_back( new PCM(filename) );
 }
 
-void Track::render(){}
 
-Track::~Track(){}
+Track::~Track()
+{
+  for (auto pcm : pcms)
+    delete pcm;
+}
