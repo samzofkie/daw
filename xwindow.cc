@@ -138,13 +138,14 @@ void XWindow::draw_pcms()
       cairo_set_source_rgb(cr, 1, 1, 1);
       cairo_move_to(cr, track_head_width,
           header_height + track_height / 2);
+      double pixels_per_sample = pcm_pixel_width / nsamples;
       for (vector<int16_t>::size_type i=1; i<nsamples; i++) {
         
-        double x = track_head_width + (i / pcm_pixel_width);
+        double x = track_head_width + i * pixels_per_sample;
         double y = header_height + 
           (pcm->data[i] / 65536.0 + 0.5) * track_height;
         
-        cairo_line_to(cr, i/pcm_pixel_width + track_head_width,
+        cairo_line_to(cr, track_head_width + i * pixels_per_sample,
             header_height + (pcm->data[i] / 65536.0 + 0.5) * track_height);
         //cout << "x: " << x << " y: " << y << endl; 
       }
@@ -166,6 +167,13 @@ void XWindow::event_loop()
       case ButtonPress:
         printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);
+        if (e.xbutton.button == 4 && samples_per_wwidth > 100) {
+          samples_per_wwidth -= 1000;
+          draw_pcms();
+        } else if ( e.xbutton.button == 5 && samples_per_wwidth < 264600) {
+          samples_per_wwidth += 1000;
+          draw_pcms();
+        }
         break;
       case KeyPress:
         XLookupString(&e.xkey, keybuf, sizeof(keybuf), &key, NULL);
