@@ -20,7 +20,8 @@ class XWindow
     int vertical_grid_line_space;
     
     std::vector<Track*> tracks;
-    TrackSizeInfo track_size_info;
+    double track_height, space_between_tracks,
+           track_head_width;
     cairo_surface_t *steel_fill;
 
     void draw_header();
@@ -29,7 +30,7 @@ class XWindow
     void draw_pcms();
     void event_loop();
 
-    double tempo;
+    double samples_per_wwidth;
   
   public:
     XWindow();

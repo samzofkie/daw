@@ -16,9 +16,11 @@ using namespace std;
 XWindow::XWindow() :
   window_width(1000), window_height(1000), header_height(100),
   vertical_grid_line_space(50),
-  track_size_info({95, 5, 175}),
+  track_height(95),
+  space_between_tracks(5),
+  track_head_width(175),
   steel_fill(cairo_image_surface_create_from_png("data/steel.png")),
-  tempo(120)
+  samples_per_wwidth(44100)
 {
   // Do all the display / window initing
   if ((display = XOpenDisplay(NULL)) == NULL) {
@@ -55,8 +57,6 @@ XWindow::XWindow() :
 
 void XWindow::draw_header()
 {
-
-
   cairo_set_source_rgb(cr, 0, 0, 0.01);
   cairo_rectangle(cr, 0, 0, window_width, header_height);
   cairo_fill(cr);
@@ -67,7 +67,7 @@ void XWindow::draw_vertical_grid_lines()
 {
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
-  for (double i = track_size_info.track_head_width + 0.5; 
+  for (double i = track_head_width + 0.5; 
        i<window_width; i += vertical_grid_line_space) {
     cairo_move_to(cr, i, header_height);
     cairo_line_to(cr, i, window_height - header_height);
@@ -78,19 +78,22 @@ void XWindow::draw_vertical_grid_lines()
 
 void XWindow::draw_tracks()
 {
-  int height = track_size_info.track_height;
-  double space = track_size_info.space_between_tracks;
-  int head_width = track_size_info.track_head_width;
+  int height = track_height;
+  double space = space_between_tracks;
+  int head_width = track_head_width;
   int total = height + space;
 
   // Horizontal lines
+  cairo_set_line_width(cr, 1);
+  cairo_set_source_rgb(cr, 1, 1, 1);
+  cairo_move_to(cr, head_width, header_height+0.5);
+  cairo_line_to(cr, window_width, header_height+0.5);
   for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
-    int y = i*total + total - space/2 + header_height;
-    cairo_set_source_rgb(cr, 1, 1, 1);
+    double y = i*total + height + header_height + space/2;
     cairo_move_to(cr, head_width, y);
     cairo_line_to(cr, window_width, y);
-    cairo_stroke(cr);
   }
+  cairo_stroke(cr);
 
   // Heads
   for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
@@ -112,15 +115,40 @@ void XWindow::draw_tracks()
   }
 }
 
+
 void XWindow::draw_pcms()
 {
   double offset = 2;
   for (vector<Track*>::size_type i=0; i<tracks.size(); i++) {
     for (vector<PCM*>::size_type j=0; j<tracks[i]->pcms.size(); j++) {
+      PCM *pcm = tracks[i]->pcms[j];
+      vector<int16_t>::size_type nsamples = pcm->data.size();
+      double pcm_pixel_width = 
+        window_width * (nsamples / samples_per_wwidth);
+      
+      // Draw surrounding rounded rect
       cairo_set_source_rgb(cr, 0, 0, 1);
-      rounded_rect(cr, track_size_info.track_head_width, header_height + offset,
-                       300, track_size_info.track_height - offset);
+      rounded_rect(cr, track_head_width, 
+                       header_height + offset,
+                       pcm_pixel_width, 
+                       track_height - offset);
       cairo_fill(cr);
+
+      // Draw waveform
+      cairo_set_source_rgb(cr, 1, 1, 1);
+      cairo_move_to(cr, track_head_width,
+          header_height + track_height / 2);
+      for (vector<int16_t>::size_type i=1; i<nsamples; i++) {
+        
+        double x = track_head_width + (i / pcm_pixel_width);
+        double y = header_height + 
+          (pcm->data[i] / 65536.0 + 0.5) * track_height;
+        
+        cairo_line_to(cr, i/pcm_pixel_width + track_head_width,
+            header_height + (pcm->data[i] / 65536.0 + 0.5) * track_height);
+        //cout << "x: " << x << " y: " << y << endl; 
+      }
+      cairo_stroke(cr);
     }
   }
 }
@@ -136,7 +164,8 @@ void XWindow::event_loop()
     switch (e.type)
     {
       case ButtonPress:
-        printf("Click! @ (%d, %d)\n", e.xbutton.x, e.xbutton.y);
+        printf("Click! @ (%d, %d) by button %u\n", 
+            e.xbutton.x, e.xbutton.y, e.xbutton.button);
         break;
       case KeyPress:
         XLookupString(&e.xkey, keybuf, sizeof(keybuf), &key, NULL);
@@ -147,7 +176,7 @@ void XWindow::event_loop()
         window_height = e.xexpose.height;
         
         draw_header();
-        draw_vertical_grid_lines();
+        //draw_vertical_grid_lines();
         draw_pcms();
         draw_tracks();
         
@@ -171,7 +200,7 @@ XWindow::~XWindow()
 void rounded_rect(cairo_t *cr, double x, double y,
                                double w, double h)
 {
-  double radius = 10; 
+  double radius = 20; 
   cairo_move_to(cr, x+radius, y);
   cairo_line_to(cr, x+w-radius, y);
   cairo_arc(cr, x+w-radius, y+radius,
