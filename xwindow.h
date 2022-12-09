@@ -37,6 +37,7 @@ class XWindow
     ~XWindow(); 
 };
 
-void rounded_rect(cairo_t *cr, double, double, double, double);
+void rounded_rect(cairo_t *cr, 
+    double, double, double, double, double);
 
 #endif //XWINDOW_H

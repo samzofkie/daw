@@ -60,6 +60,15 @@ void XWindow::draw_header()
   cairo_set_source_rgb(cr, 0, 0, 0.01);
   cairo_rectangle(cr, 0, 0, window_width, header_height);
   cairo_fill(cr);
+
+  // Draw loop area
+  double loop_area_height = 25;
+  rounded_rect(cr, track_head_width, 
+      header_height - (loop_area_height + 5),
+      window_width - track_head_width,
+      loop_area_height, 10);
+  cairo_set_source_rgb(cr, 1, 0, 0);
+  cairo_stroke(cr);
 }
 
 
@@ -131,24 +140,24 @@ void XWindow::draw_pcms()
       rounded_rect(cr, track_head_width, 
                        header_height + offset,
                        pcm_pixel_width, 
-                       track_height - offset);
+                       track_height - offset, 20);
       cairo_fill(cr);
 
       // Draw waveform
       cairo_set_source_rgb(cr, 1, 1, 1);
       cairo_move_to(cr, track_head_width,
           header_height + track_height / 2);
-      double pixels_per_sample = pcm_pixel_width / nsamples;
-      for (vector<int16_t>::size_type i=1; i<nsamples; i++) {
-        
-        double x = track_head_width + i * pixels_per_sample;
-        double y = header_height + 
-          (pcm->data[i] / 65536.0 + 0.5) * track_height;
-        
+      double samples_per_pixel = nsamples / pcm_pixel_width;
+      for (int i=0; i<pcm_pixel_width; i+=2) {
+        double datum = pcm->data[floor(i*samples_per_pixel)];
+        cairo_line_to(cr, track_head_width + i, 
+            (datum / 65536.0 + 0.5) * track_height + header_height);
+      }
+
+      /*for (vector<int16_t>::size_type i=1; i<nsamples; i++) {  
         cairo_line_to(cr, track_head_width + i * pixels_per_sample,
             header_height + (pcm->data[i] / 65536.0 + 0.5) * track_height);
-        //cout << "x: " << x << " y: " << y << endl; 
-      }
+      }*/
       cairo_stroke(cr);
     }
   }
@@ -206,9 +215,8 @@ XWindow::~XWindow()
 
 
 void rounded_rect(cairo_t *cr, double x, double y,
-                               double w, double h)
+                               double w, double h, double radius)
 {
-  double radius = 20; 
   cairo_move_to(cr, x+radius, y);
   cairo_line_to(cr, x+w-radius, y);
   cairo_arc(cr, x+w-radius, y+radius,
