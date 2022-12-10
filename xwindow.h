@@ -3,39 +3,43 @@
 
 #include <vector>
 #include <X11/Xlib.h>
+
+#include "header.h"
 #include "track.h"
+#include "track_manager.h"
+#include "pahandler.h"
 
 class XWindow
 {
+ public:
+    XWindow();
+    ~XWindow();
+
   private:
     Display *display;
     int screen;
-    int window_width, window_height;
     Drawable window;
-    cairo_surface_t *c_surf;
+    cairo_surface_t *cairo_surf;
     cairo_t *cr;
-
-    int header_height;
-
-    int vertical_grid_line_space;
     
-    std::vector<Track*> tracks;
-    double track_height, space_between_tracks,
-           track_head_width;
-    cairo_surface_t *steel_fill;
-
-    void draw_header();
-    void draw_vertical_grid_lines();
-    void draw_tracks();
-    void draw_pcms();
-    void event_loop();
-
+    // Window width, window height
+    int wwidth, wheight;
     double samples_per_wwidth;
-  
-  public:
-    XWindow();
-    ~XWindow(); 
-};
+    
+    double vertical_grid_line_space;
+    
+    TrackManager *track_manager;
+
+    double header_height;
+    Header *header;
+
+     
+    PAHandler *pa_sink;
+
+    void create_window();
+    void draw_vertical_grid_lines();
+    void event_loop(); 
+ };
 
 void rounded_rect(cairo_t *cr, 
     double, double, double, double, double);

@@ -8,67 +8,56 @@
 #include <cairo-xlib.h>
 
 #include "xwindow.h"
-#include "pcm.h"
-
 
 using namespace std;
 
+
 XWindow::XWindow() :
-  window_width(1000), window_height(1000), header_height(100),
+  wwidth(1000), wheight(1000), 
+  samples_per_wwidth(44100), // initial size is one second
   vertical_grid_line_space(50),
-  track_height(95),
-  space_between_tracks(5),
-  track_head_width(175),
-  steel_fill(cairo_image_surface_create_from_png("data/steel.png")),
-  samples_per_wwidth(44100)
+  track_manager(new TrackManager(3)), 
+  header_height(100),
+  header(new Header(track_manager->head_width)),
+  pa_sink(new PAHandler(4096))
 {
-  // Do all the display / window initing
+  create_window(); 
+  event_loop();
+}
+
+
+XWindow::~XWindow()
+{
+  XCloseDisplay(display);
+  delete header;
+  delete track_manager;
+  delete pa_sink;
+}
+
+
+void XWindow::create_window()
+{
   if ((display = XOpenDisplay(NULL)) == NULL) {
     cout << "XOpenDisplay() failed!\n";
     exit(1);
   }
   screen = DefaultScreen(display);
   window = XCreateSimpleWindow(display, DefaultRootWindow(display),
-                               0, 0, window_width, window_height, 
+                               0, 0, wwidth, wheight, 
                                0, 0, 0);
   XSelectInput(display, window, ButtonPressMask | KeyPressMask | ExposureMask);
   XMapWindow(display, window);
   
   // The cairo surface potentially needs to be as big as 
-  // the largest screen in the display.
+  // the screen in the display. Defensive would be to make it
+  // as big as the Largest screen in the display.
   int surface_width = DisplayWidth(display, screen);
   int surface_height = DisplayHeight(display, screen);
-  c_surf = cairo_xlib_surface_create(display,
+  cairo_surf = cairo_xlib_surface_create(display,
              window, DefaultVisual(display, screen),
              surface_width, surface_height);
-  cairo_xlib_surface_set_size(c_surf, surface_width, surface_height);
-  cr = cairo_create(c_surf);
-
-
-  // Create tracks
-  for (int i=0; i<3; i++)
-    tracks.push_back(new Track);
-
-  tracks[0]->add("./snare.wav");
-
-  event_loop();
-}
-
-
-void XWindow::draw_header()
-{
-  cairo_set_source_rgb(cr, 0, 0, 0.01);
-  cairo_rectangle(cr, 0, 0, window_width, header_height);
-  cairo_fill(cr);
-
-  // Draw loop area
-  double loop_area_height = 25;
-  rounded_rect(cr, track_head_width, 
-      header_height - (loop_area_height + 5),
-      window_width - track_head_width,
-      loop_area_height, 10);
-  cairo_set_source_rgb(cr, 1, 0, 0);
-  cairo_stroke(cr);
+  cairo_xlib_surface_set_size(cairo_surf, surface_width, surface_height);
+  cr = cairo_create(cairo_surf);
 }
 
 
@@ -76,55 +65,16 @@ void XWindow::draw_vertical_grid_lines()
 {
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
-  for (double i = track_head_width + 0.5; 
-       i<window_width; i += vertical_grid_line_space) {
+  for (double i = track_manager->head_width + 0.5; 
+       i<wwidth; i += vertical_grid_line_space) {
     cairo_move_to(cr, i, header_height);
-    cairo_line_to(cr, i, window_height - header_height);
+    cairo_line_to(cr, i, wheight);
   }
   cairo_stroke(cr);
 }
 
 
-void XWindow::draw_tracks()
-{
-  int height = track_height;
-  double space = space_between_tracks;
-  int head_width = track_head_width;
-  int total = height + space;
-
-  // Horizontal lines
-  cairo_set_line_width(cr, 1);
-  cairo_set_source_rgb(cr, 1, 1, 1);
-  cairo_move_to(cr, head_width, header_height+0.5);
-  cairo_line_to(cr, window_width, header_height+0.5);
-  for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
-    double y = i*total + height + header_height + space/2;
-    cairo_move_to(cr, head_width, y);
-    cairo_line_to(cr, window_width, y);
-  }
-  cairo_stroke(cr);
-
-  // Heads
-  for (vector<Track*>::size_type i=0; i < tracks.size(); i++) {
-    int y = i*total + header_height;
-    cairo_move_to(cr, head_width + 10, y);
-    cairo_line_to(cr, 3, y);
-    cairo_line_to(cr, 3, y + height);
-    cairo_line_to(cr, head_width + 10, y + height);
-    cairo_curve_to(cr, head_width + 10, y + height,
-                       head_width - 50, y + height/2,
-                       head_width + 10, y);
-    cairo_close_path(cr);
-    
-    cairo_set_source_surface(cr, steel_fill, 0, i*total);
-    cairo_fill_preserve(cr);
-
-    cairo_set_source_rgb(cr, 1, 1, 0);
-    cairo_stroke(cr);
-  }
-}
-
-
+/*
 void XWindow::draw_pcms()
 {
   double offset = 2;
@@ -154,14 +104,10 @@ void XWindow::draw_pcms()
             (datum / 65536.0 + 0.5) * track_height + header_height);
       }
 
-      /*for (vector<int16_t>::size_type i=1; i<nsamples; i++) {  
-        cairo_line_to(cr, track_head_width + i * pixels_per_sample,
-            header_height + (pcm->data[i] / 65536.0 + 0.5) * track_height);
-      }*/
       cairo_stroke(cr);
     }
   }
-}
+}*/
 
 
 void XWindow::event_loop()
@@ -176,41 +122,36 @@ void XWindow::event_loop()
       case ButtonPress:
         printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);
+        // Scroll up
         if (e.xbutton.button == 4 && samples_per_wwidth > 100) {
           samples_per_wwidth -= 1000;
-          draw_pcms();
+          // draw grid lines and pcms
+        // Scroll down
         } else if ( e.xbutton.button == 5 && samples_per_wwidth < 264600) {
           samples_per_wwidth += 1000;
-          draw_pcms();
+          // redraw grid lines and pcms
         }
         break;
+
       case KeyPress:
         XLookupString(&e.xkey, keybuf, sizeof(keybuf), &key, NULL);
         printf("KeyPress string: %s\n", keybuf);
         break;
+
       case Expose:
-        window_width = e.xexpose.width;
-        window_height = e.xexpose.height;
+        wwidth = e.xexpose.width;
+        wheight = e.xexpose.height;
         
-        draw_header();
-        //draw_vertical_grid_lines();
-        draw_pcms();
-        draw_tracks();
-        
+        header->draw(cr, 0, 0, wwidth, header_height);
+        draw_vertical_grid_lines();
+        track_manager->draw(cr, 0, header_height,
+            wwidth, wheight - header_height);        
         break;
+
       default:
         cout << "Unhandled XEvent.type: " << e.type << endl;
     }
   }
-}
-
-
-XWindow::~XWindow()
-{
-  XCloseDisplay(display);
-  for (auto track : tracks)
-    delete track;
-  cairo_surface_destroy(steel_fill);
 }
 
 

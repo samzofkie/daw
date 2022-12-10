@@ -1,24 +1,27 @@
 CXX := g++
-opts:= -Wall -lm -std=c++17 `pkg-config --cflags --libs gtkmm-4.0 cairomm-1.0 libpulse-simple x11 cairo`
-objs := scxx.o pcm_draw_area.o pahandler.o pcm.o xwindow.o track.o
+opts:= -Wall -lm -std=c++17 `pkg-config --cflags --libs x11 cairo libpulse-simple`
+objs := main.o xwindow.o header.o track_manager.o track.o pcm.o pahandler.o
 
-synth: $(objs)
-	g++ $(objs) -o synth $(opts)
+daw: $(objs)
+	g++ $(objs) -o daw $(opts)
 
-scxx.o: scxx.cc
-	g++ -c scxx.cc $(opts)
-
-pcm_draw_area.o: pcm_draw_area.cc pcm_draw_area.h
-	g++ -c pcm_draw_area.cc $(opts)
-
-pahandler.o: pahandler.h pahandler.cc
-	g++ -c pahandler.cc $(opts)
-
-pcm.o: pcm.h pcm.cc
-	g++ -c pcm.cc $(opts)
+main.o: main.cc
+	g++ -c main.cc $(opts)
 
 xwindow.o: xwindow.h xwindow.cc
 	g++ -c xwindow.cc $(opts)
 
+header.o: header.h header.cc
+	g++ -c header.cc $(opts)
+
+track_manager.o: track_manager.h track_manager.cc
+	g++ -c track_manager.cc $(opts)
+
 track.o: track.h track.cc
 	g++ -c track.cc $(opts)
+
+pcm.o: pcm.h pcm.cc
+	g++ -c pcm.cc $(opts)
+
+pahandler.o: pahandler.h pahandler.cc
+	g++ -c pahandler.cc $(opts)
