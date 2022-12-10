@@ -3,14 +3,17 @@
 
 #include <cairo.h>
 
+class XWindow;
+
 class Header
 {
   public:
-    Header(double);
+    Header(XWindow *);
     ~Header();
     void draw(cairo_t *, double, double, double, double);
   private:
-    double track_head_width, loop_area_height; 
+    XWindow *window;
+    double loop_area_height; 
 };
 
-#endif //TRACK_H
+#endif //HEADER_H

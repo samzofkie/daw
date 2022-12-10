@@ -6,7 +6,6 @@
 
 #include "header.h"
 #include "track.h"
-#include "track_manager.h"
 #include "pahandler.h"
 
 class XWindow
@@ -15,28 +14,40 @@ class XWindow
     XWindow();
     ~XWindow();
 
+    // Master info 
+    double wwidth, wheight;
+    double total_time, start_time, end_time;
+    double tempo;
+
+    // Track drawing info
+    double track_height, space_between_tracks,
+           track_head_width;
+    cairo_surface_t *track_head_fill;
+    
+    double header_height;
+
+
   private:
+    // Window stuff
     Display *display;
     int screen;
-    Drawable window;
+    Drawable window; 
     cairo_surface_t *cairo_surf;
     cairo_t *cr;
     
-    int wwidth, wheight;
-    double total_time, start_time, end_time, tempo;
-    double samples_per_wwidth; 
-    double vertical_grid_line_space;
-    
-    TrackManager *track_manager;
-
-    double header_height;
+    std::vector<Track*> tracks;
     Header *header;
-
-     
     PAHandler *pa_sink;
 
+    // TrackManager *track_manager;
+
+    //Header *header;
+
+    //PAHandler *pa_sink;
+
     void create_window();
-    void draw_vertical_grid_lines();
+    //void draw_vertical_grid_lines();
+    void draw_grid();
     void event_loop(); 
  };
 

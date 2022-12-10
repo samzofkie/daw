@@ -1,5 +1,7 @@
 #include <iostream>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -18,15 +20,26 @@ XWindow::XWindow() :
   start_time(0),
   end_time(10),
   tempo(120),
-  track_manager(new TrackManager(3)), 
+  track_height(95),
+  space_between_tracks(5),
+  track_head_width(175),
+  track_head_fill(
+      cairo_image_surface_create_from_png("data/steel.png")),
   header_height(100),
-  header(new Header(track_manager->head_width)),
+  header(new Header(this)),
   pa_sink(new PAHandler(4096))
 {
-  PCM *snare = new PCM("data/snare.wav");
-  track_manager->add_pcm(snare, 1);
-  
+  srand(time(NULL));
+    
   create_window(); 
+  
+  for (int i=0; i<2; i++)
+    tracks.push_back(new Track(this));
+
+  PCM *snare = new PCM("data/snare.wav");
+  tracks[1]->add(snare, 1);
+
+
   event_loop();
 }
 
@@ -34,8 +47,10 @@ XWindow::XWindow() :
 XWindow::~XWindow()
 {
   XCloseDisplay(display);
+  cairo_surface_destroy(track_head_fill);
   delete header;
-  delete track_manager;
+  for (Track *track : tracks)
+    delete track;
   delete pa_sink;
 }
 
@@ -66,56 +81,56 @@ void XWindow::create_window()
 }
 
 
-void XWindow::draw_vertical_grid_lines()
+void XWindow::draw_grid()
 {
-  vertical_grid_line_space = wwidth / 
-      ((tempo/60)*(end_time-start_time));
+  double total_track_height = track_height + space_between_tracks;
+
+  // initial line
+  cairo_move_to(cr, track_head_width+0.5, header_height);
+  cairo_line_to(cr, track_head_width+0.5, 
+      header_height+total_track_height*tracks.size());
+
+  double bps = tempo/60;
+  double elapsed_beats = (end_time-start_time)*bps;
+  double pixels_per_beat = (wwidth-track_head_width) / elapsed_beats;
+
+  int num_visible_beats = floor(elapsed_beats);
+  double offset_beat = elapsed_beats - num_visible_beats;
+  double offset_pixel = offset_beat * pixels_per_beat;
+
+  int total_beats = floor(total_time*bps);
+  int num_beats_to_draw = min(num_visible_beats, total_beats); 
+  
+  for (int i=0; i<num_beats_to_draw; i++) {
+    double x = track_head_width + offset_pixel + i*pixels_per_beat;
+    x = floor(x) + 0.5;
+    cairo_move_to(cr, x, header_height);
+    cairo_line_to(cr, x, header_height + tracks.size()*total_track_height);
+  }
+    
+  // Vertical lines
+  /*double beats_visible = (tempo/60)*(end_time-start_time);
+  double vertical_line_space = wwidth / beats_visible;
+  
+  // Is this drawing off screen?
+  for (double i = track_head_width + 0.5; 
+       i < wwidth * (total_time/(end_time-start_time));
+       i += vertical_line_space) {
+    cairo_move_to(cr, i, header_height);
+    cairo_line_to(cr, i, header_height + total_track_height * tracks.size());
+  }
+ 
+  // Horizontal lines
+  for (vector<Track*>::size_type i=0; i<tracks.size()+1; i++) {
+    cairo_move_to(cr, track_head_width, total_track_height * i + header_height+0.5);
+    cairo_line_to(cr, wwidth * total_time/(end_time-start_time), 
+        total_track_height * i + header_height+0.5);
+  }*/
+
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
-  for (double i = track_manager->head_width + 0.5; 
-       i < wwidth * (total_time/(end_time-start_time));
-       i += vertical_grid_line_space) {
-    cairo_move_to(cr, i, header_height);
-    cairo_line_to(cr, i, wheight);
-  }
   cairo_stroke(cr);
 }
-
-
-/*
-void XWindow::draw_pcms()
-{
-  double offset = 2;
-  for (vector<Track*>::size_type i=0; i<tracks.size(); i++) {
-    for (vector<PCM*>::size_type j=0; j<tracks[i]->pcms.size(); j++) {
-      PCM *pcm = tracks[i]->pcms[j];
-      vector<int16_t>::size_type nsamples = pcm->data.size();
-      double pcm_pixel_width = 
-        window_width * (nsamples / samples_per_wwidth);
-      
-      // Draw surrounding rounded rect
-      cairo_set_source_rgb(cr, 0, 0, 1);
-      rounded_rect(cr, track_head_width, 
-                       header_height + offset,
-                       pcm_pixel_width, 
-                       track_height - offset, 20);
-      cairo_fill(cr);
-
-      // Draw waveform
-      cairo_set_source_rgb(cr, 1, 1, 1);
-      cairo_move_to(cr, track_head_width,
-          header_height + track_height / 2);
-      double samples_per_pixel = nsamples / pcm_pixel_width;
-      for (int i=0; i<pcm_pixel_width; i+=2) {
-        double datum = pcm->data[floor(i*samples_per_pixel)];
-        cairo_line_to(cr, track_head_width + i, 
-            (datum / 65536.0 + 0.5) * track_height + header_height);
-      }
-
-      cairo_stroke(cr);
-    }
-  }
-}*/
 
 
 void XWindow::event_loop()
@@ -129,6 +144,7 @@ void XWindow::event_loop()
     switch (e.type)
     {
       case ButtonPress:
+        
         printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);
         
@@ -144,14 +160,20 @@ void XWindow::event_loop()
         }
         if (scrolled) {
           cairo_set_source_rgb(cr, 0, 0, 0);
-          cairo_rectangle(cr, track_manager->head_width,
-              header_height, wwidth - track_manager->head_width,
+          cairo_rectangle(cr, track_head_width,
+              header_height, wwidth - track_head_width,
               wheight - header_height);
           cairo_fill(cr);
-          draw_vertical_grid_lines();
-          track_manager->draw(cr, 0, header_height,
-            wwidth, wheight - header_height);
+          draw_grid();
+          
+          for (vector<Track*>::size_type i=0; 
+              i<tracks.size(); i++)
+            tracks[i]->draw(cr, 0, 
+                i*(track_height+space_between_tracks)
+                + space_between_tracks/2 + header_height,
+                wwidth, track_height);
         }
+
         break;
 
       case KeyPress:
@@ -164,9 +186,14 @@ void XWindow::event_loop()
         wheight = e.xexpose.height;
         
         header->draw(cr, 0, 0, wwidth, header_height);
-        draw_vertical_grid_lines();
-        track_manager->draw(cr, 0, header_height,
-            wwidth, wheight - header_height);        
+        draw_grid();
+        for (vector<Track*>::size_type i=0; i<tracks.size(); i++)
+            tracks[i]->draw(cr, 0, 
+                i*(track_height+space_between_tracks)
+                + space_between_tracks/2 + header_height,
+                wwidth, track_height);
+
+
         break;
 
       default:
