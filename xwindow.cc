@@ -13,14 +13,19 @@ using namespace std;
 
 
 XWindow::XWindow() :
-  wwidth(1000), wheight(1000), 
-  samples_per_wwidth(44100), // initial size is one second
-  vertical_grid_line_space(50),
+  wwidth(1000), wheight(1000),
+  total_time(10),
+  start_time(0),
+  end_time(10),
+  tempo(120),
   track_manager(new TrackManager(3)), 
   header_height(100),
   header(new Header(track_manager->head_width)),
   pa_sink(new PAHandler(4096))
 {
+  PCM *snare = new PCM("data/snare.wav");
+  track_manager->add_pcm(snare, 1);
+  
   create_window(); 
   event_loop();
 }
@@ -63,10 +68,13 @@ void XWindow::create_window()
 
 void XWindow::draw_vertical_grid_lines()
 {
+  vertical_grid_line_space = wwidth / 
+      ((tempo/60)*(end_time-start_time));
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
   for (double i = track_manager->head_width + 0.5; 
-       i<wwidth; i += vertical_grid_line_space) {
+       i < wwidth * (total_time/(end_time-start_time));
+       i += vertical_grid_line_space) {
     cairo_move_to(cr, i, header_height);
     cairo_line_to(cr, i, wheight);
   }
@@ -115,6 +123,7 @@ void XWindow::event_loop()
   char keybuf[8];
   KeySym key;
   XEvent e;
+  bool scrolled;
   for (;;) {
     XNextEvent(display, &e);
     switch (e.type)
@@ -122,14 +131,26 @@ void XWindow::event_loop()
       case ButtonPress:
         printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);
+        
+        scrolled = false;
         // Scroll up
-        if (e.xbutton.button == 4 && samples_per_wwidth > 100) {
-          samples_per_wwidth -= 1000;
-          // draw grid lines and pcms
+        if (e.xbutton.button == 4) {
+          end_time += 0.5; 
+          scrolled = true;
         // Scroll down
-        } else if ( e.xbutton.button == 5 && samples_per_wwidth < 264600) {
-          samples_per_wwidth += 1000;
-          // redraw grid lines and pcms
+        } else if (e.xbutton.button == 5 && end_time > 0.01) {
+          end_time -= 0.5;
+          scrolled = true;
+        }
+        if (scrolled) {
+          cairo_set_source_rgb(cr, 0, 0, 0);
+          cairo_rectangle(cr, track_manager->head_width,
+              header_height, wwidth - track_manager->head_width,
+              wheight - header_height);
+          cairo_fill(cr);
+          draw_vertical_grid_lines();
+          track_manager->draw(cr, 0, header_height,
+            wwidth, wheight - header_height);
         }
         break;
 
@@ -149,7 +170,8 @@ void XWindow::event_loop()
         break;
 
       default:
-        cout << "Unhandled XEvent.type: " << e.type << endl;
+        if (e.type != 65)
+          cout << "Unhandled XEvent.type: " << e.type << endl;
     }
   }
 }

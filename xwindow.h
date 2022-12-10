@@ -22,10 +22,9 @@ class XWindow
     cairo_surface_t *cairo_surf;
     cairo_t *cr;
     
-    // Window width, window height
     int wwidth, wheight;
-    double samples_per_wwidth;
-    
+    double total_time, start_time, end_time, tempo;
+    double samples_per_wwidth; 
     double vertical_grid_line_space;
     
     TrackManager *track_manager;

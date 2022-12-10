@@ -4,6 +4,7 @@
 #include <vector>
 #include <cairo.h>
 #include "track.h"
+#include "pcm.h"
 
 class TrackManager
 {
@@ -13,6 +14,7 @@ class TrackManager
     double track_height, space_between_tracks,
            head_width;
     void add_new_track();
+    void add_pcm(PCM*, int); 
     void draw(cairo_t *, double,
         double, double, double);
   private:
