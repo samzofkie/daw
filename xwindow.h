@@ -18,6 +18,7 @@ class XWindow
     double wwidth, wheight;
     double total_time, start_time, end_time;
     double tempo;
+    unsigned int sample_rate;
 
     // Track drawing info
     double track_height, space_between_tracks,
@@ -39,15 +40,10 @@ class XWindow
     Header *header;
     PAHandler *pa_sink;
 
-    // TrackManager *track_manager;
-
-    //Header *header;
-
-    //PAHandler *pa_sink;
-
     void create_window();
-    //void draw_vertical_grid_lines();
     void draw_grid();
+    void draw_tracks();
+    void handle_click(XEvent e);
     void event_loop(); 
  };
 

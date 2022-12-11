@@ -16,10 +16,11 @@ using namespace std;
 
 XWindow::XWindow() :
   wwidth(1000), wheight(1000),
-  total_time(10),
+  total_time(3),
   start_time(0),
-  end_time(10),
+  end_time(2),
   tempo(120),
+  sample_rate(44100),
   track_height(95),
   space_between_tracks(5),
   track_head_width(175),
@@ -33,12 +34,11 @@ XWindow::XWindow() :
     
   create_window(); 
   
-  for (int i=0; i<2; i++)
+  for (int i=0; i<8; i++)
     tracks.push_back(new Track(this));
 
   PCM *snare = new PCM("data/snare.wav");
-  tracks[1]->add(snare, 1);
-
+  tracks[1]->add(snare);
 
   event_loop();
 }
@@ -83,53 +83,108 @@ void XWindow::create_window()
 
 void XWindow::draw_grid()
 {
+  // Black out underneath
+  cairo_rectangle(cr, track_head_width,
+              header_height, wwidth - track_head_width,
+              wheight - header_height);
+  cairo_set_source_rgb(cr, 0, 0, 0);
+  cairo_fill(cr);
+
   double total_track_height = track_height + space_between_tracks;
 
-  // initial line
+  // Initial line
   cairo_move_to(cr, track_head_width+0.5, header_height);
   cairo_line_to(cr, track_head_width+0.5, 
-      header_height+total_track_height*tracks.size());
+      header_height + total_track_height*tracks.size());
 
-  double bps = tempo/60;
-  double elapsed_beats = (end_time-start_time)*bps;
-  double pixels_per_beat = (wwidth-track_head_width) / elapsed_beats;
+  // Vertical lines
+  double elapsed_seconds = end_time - start_time;
+  double elapsed_beats = elapsed_seconds * tempo/60;  
+  double elapsed_pixels = wwidth - track_head_width;
 
-  int num_visible_beats = floor(elapsed_beats);
-  double offset_beat = elapsed_beats - num_visible_beats;
-  double offset_pixel = offset_beat * pixels_per_beat;
+    // What number beat is the first visible beat?
+  double beats_per_second = tempo/60;
+  double start_beat = start_time * beats_per_second;
+  int first_visible_beat = ceil(start_beat);
+    // The last visible beat?
+  double end_beat = end_time * beats_per_second;
+  int last_visible_beat = floor(end_beat);
+    // How much time is in between the theorhetical 
+    // start_beat and the first visible beat?
+  double beat_offset = first_visible_beat - start_beat;
+    // How many beats are we going to draw?
+  int total_beats = last_visible_beat - first_visible_beat;
+    // Wait-- we don't want to draw the grid beyond total_time.
+    // How many beats is that?
+  int last_possible_beat = ceil(total_time * beats_per_second);
+  total_beats = min(total_beats, last_possible_beat);
+    // How many pixels are in between any two beats?
+  double pixels_per_beat = elapsed_pixels / elapsed_beats;
 
-  int total_beats = floor(total_time*bps);
-  int num_beats_to_draw = min(num_visible_beats, total_beats); 
-  
-  for (int i=0; i<num_beats_to_draw; i++) {
-    double x = track_head_width + offset_pixel + i*pixels_per_beat;
-    x = floor(x) + 0.5;
+  for (int i=0; i<=total_beats; i++) {
+    double x = (beat_offset + i) * pixels_per_beat;
+    // Add track_head_width and floor and +0.5 for reality
+    x = floor(x) + 0.5 + track_head_width;
     cairo_move_to(cr, x, header_height);
-    cairo_line_to(cr, x, header_height + tracks.size()*total_track_height);
+    cairo_line_to(cr, x, header_height +
+        tracks.size() * total_track_height);
   }
     
-  // Vertical lines
-  /*double beats_visible = (tempo/60)*(end_time-start_time);
-  double vertical_line_space = wwidth / beats_visible;
-  
-  // Is this drawing off screen?
-  for (double i = track_head_width + 0.5; 
-       i < wwidth * (total_time/(end_time-start_time));
-       i += vertical_line_space) {
-    cairo_move_to(cr, i, header_height);
-    cairo_line_to(cr, i, header_height + total_track_height * tracks.size());
-  }
- 
   // Horizontal lines
   for (vector<Track*>::size_type i=0; i<tracks.size()+1; i++) {
-    cairo_move_to(cr, track_head_width, total_track_height * i + header_height+0.5);
-    cairo_line_to(cr, wwidth * total_time/(end_time-start_time), 
-        total_track_height * i + header_height+0.5);
-  }*/
+    cairo_move_to(cr, track_head_width, 
+        total_track_height*i + header_height + 0.5);
+    double x = (beat_offset + last_possible_beat) * pixels_per_beat;
+    x = floor(x) + 0.5 + track_head_width; 
+    cairo_line_to(cr, min(x, wwidth),
+        total_track_height*i + header_height + 0.5);
+  } 
 
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_set_line_width(cr, 1);
   cairo_stroke(cr);
+}
+
+
+void XWindow::draw_tracks()
+{
+  for (vector<Track*>::size_type i=0; i<tracks.size(); i++)
+    tracks[i]->draw(cr, 0, 
+        i*(track_height+space_between_tracks) + space_between_tracks/2 + header_height,
+                wwidth, track_height);
+}
+
+
+void XWindow::handle_click(XEvent e)
+{
+  /*printf("Click! @ (%d, %d) by button %u\n", 
+            e.xbutton.x, e.xbutton.y, e.xbutton.button);*/
+  double x = max(0.0, e.xbutton.x - track_head_width);  
+  bool scrolled = false;
+  double amount_to_zoom = 0.3;
+  double ratio = x / (wwidth - track_head_width);
+
+  if (e.xbutton.button == 4) { 
+    // Scroll up? Zoom out
+    if (start_time > 0)
+      start_time = max(0.0, 
+          start_time - ratio * amount_to_zoom);
+    end_time += (1-ratio) * amount_to_zoom; 
+    scrolled = true;
+  } else if (e.xbutton.button == 5) { 
+    // Scroll down? Zoom in
+    start_time += ratio * amount_to_zoom;
+    if (end_time > 0.1)
+      end_time = max(0.1, 
+          end_time - (1-ratio) * amount_to_zoom);
+    scrolled = true;
+  }
+  if (scrolled) {
+    cout << start_time << " " << end_time << endl;
+    draw_grid();
+    draw_tracks();          
+  }
+
 }
 
 
@@ -138,42 +193,12 @@ void XWindow::event_loop()
   char keybuf[8];
   KeySym key;
   XEvent e;
-  bool scrolled;
   for (;;) {
     XNextEvent(display, &e);
     switch (e.type)
     {
-      case ButtonPress:
-        
-        printf("Click! @ (%d, %d) by button %u\n", 
-            e.xbutton.x, e.xbutton.y, e.xbutton.button);
-        
-        scrolled = false;
-        // Scroll up
-        if (e.xbutton.button == 4) {
-          end_time += 0.5; 
-          scrolled = true;
-        // Scroll down
-        } else if (e.xbutton.button == 5 && end_time > 0.01) {
-          end_time -= 0.5;
-          scrolled = true;
-        }
-        if (scrolled) {
-          cairo_set_source_rgb(cr, 0, 0, 0);
-          cairo_rectangle(cr, track_head_width,
-              header_height, wwidth - track_head_width,
-              wheight - header_height);
-          cairo_fill(cr);
-          draw_grid();
-          
-          for (vector<Track*>::size_type i=0; 
-              i<tracks.size(); i++)
-            tracks[i]->draw(cr, 0, 
-                i*(track_height+space_between_tracks)
-                + space_between_tracks/2 + header_height,
-                wwidth, track_height);
-        }
-
+      case ButtonPress:         
+        handle_click(e);
         break;
 
       case KeyPress:
@@ -187,13 +212,7 @@ void XWindow::event_loop()
         
         header->draw(cr, 0, 0, wwidth, header_height);
         draw_grid();
-        for (vector<Track*>::size_type i=0; i<tracks.size(); i++)
-            tracks[i]->draw(cr, 0, 
-                i*(track_height+space_between_tracks)
-                + space_between_tracks/2 + header_height,
-                wwidth, track_height);
-
-
+        draw_tracks();
         break;
 
       default:

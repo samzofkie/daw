@@ -20,6 +20,7 @@ void Header::draw(cairo_t *cr, double x, double y,
   cairo_rectangle(cr, x, y, w, h);
   cairo_fill(cr);
 
+  // Background
   double border_width = 3;
   cairo_move_to(cr, x, y);
   cairo_line_to(cr, x+w, y);
