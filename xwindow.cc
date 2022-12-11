@@ -18,7 +18,7 @@ XWindow::XWindow() :
   wwidth(1000), wheight(1000),
   total_time(3),
   start_time(0),
-  end_time(2),
+  end_time(4),
   tempo(120),
   sample_rate(44100),
   track_height(95),
@@ -98,38 +98,24 @@ void XWindow::draw_grid()
       header_height + total_track_height*tracks.size());
 
   // Vertical lines
-  double elapsed_seconds = end_time - start_time;
-  double elapsed_beats = elapsed_seconds * tempo/60;  
-  double elapsed_pixels = wwidth - track_head_width;
-
-    // What number beat is the first visible beat?
   double beats_per_second = tempo/60;
-  double start_beat = start_time * beats_per_second;
-  int first_visible_beat = ceil(start_beat);
-    // The last visible beat?
-  double end_beat = end_time * beats_per_second;
-  int last_visible_beat = floor(end_beat);
-    // How much time is in between the theorhetical 
-    // start_beat and the first visible beat?
-  double beat_offset = first_visible_beat - start_beat;
-    // How many beats are we going to draw?
-  int total_beats = last_visible_beat - first_visible_beat;
-    // Wait-- we don't want to draw the grid beyond total_time.
-    // How many beats is that?
-  int last_possible_beat = ceil(total_time * beats_per_second);
-  total_beats = min(total_beats, last_possible_beat);
-    // How many pixels are in between any two beats?
-  double pixels_per_beat = elapsed_pixels / elapsed_beats;
+  int first_beat = ceil(start_time * beats_per_second);
+  int last_beat = floor(end_time * beats_per_second);
+  last_beat = min(last_beat, (int)ceil(total_time * beats_per_second));
+  double seconds_per_beat = 60/tempo;
+  double offset_time = (first_beat * seconds_per_beat) - start_time;
+  double pixels_per_second = (wwidth - track_head_width) 
+                            / (end_time - start_time);
+  double offset_pixels = offset_time * pixels_per_second;
+  double pixels_per_beat = pixels_per_second * seconds_per_beat;
 
-  for (int i=0; i<=total_beats; i++) {
-    double x = (beat_offset + i) * pixels_per_beat;
-    // Add track_head_width and floor and +0.5 for reality
-    x = floor(x) + 0.5 + track_head_width;
-    cairo_move_to(cr, x, header_height);
-    cairo_line_to(cr, x, header_height +
+  for (double i = offset_pixels + track_head_width; 
+      i<wwidth; i += pixels_per_beat) {
+    cairo_move_to(cr, i, header_height);
+    cairo_line_to(cr, i, header_height + 
         tracks.size() * total_track_height);
   }
-    
+      
   // Horizontal lines
   for (vector<Track*>::size_type i=0; i<tracks.size()+1; i++) {
     cairo_move_to(cr, track_head_width, 
@@ -160,27 +146,35 @@ void XWindow::handle_click(XEvent e)
   /*printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);*/
   double x = max(0.0, e.xbutton.x - track_head_width);  
-  bool scrolled = false;
-  double amount_to_zoom = 0.3;
   double ratio = x / (wwidth - track_head_width);
-
+  bool scrolled = false;
+  
+  // Scroll logic
+  //   x is mouse position
+  //   start_time + x / end_time - x = 
+  //   new_start_time + x / new_end_time - x
+  // to zoom in on whats underneath the cursor
+  
   if (e.xbutton.button == 4) { 
     // Scroll up? Zoom out
-    if (start_time > 0)
-      start_time = max(0.0, 
-          start_time - ratio * amount_to_zoom);
-    end_time += (1-ratio) * amount_to_zoom; 
+    double new_start_time = start_time - ratio;
+    double new_end_time = (new_start_time + x) * (end_time - x) / (start_time + x) + x;
+    new_start_time = max(0.0, new_start_time);
+    start_time = new_start_time;
+    end_time = new_end_time;
     scrolled = true;
+
   } else if (e.xbutton.button == 5) { 
     // Scroll down? Zoom in
-    start_time += ratio * amount_to_zoom;
-    if (end_time > 0.1)
-      end_time = max(0.1, 
-          end_time - (1-ratio) * amount_to_zoom);
+    double new_start_time = start_time + ratio;
+    double new_end_time = (new_start_time + x) * (end_time - x) / (start_time + x) + x;
+    new_end_time = max(0.1, new_end_time);
+    start_time = new_start_time;
+    end_time = new_end_time;
     scrolled = true;
   }
   if (scrolled) {
-    cout << start_time << " " << end_time << endl;
+    //cout << start_time << " " << end_time << endl;
     draw_grid();
     draw_tracks();          
   }
