@@ -43,6 +43,7 @@ class XWindow
     void create_window();
     void draw_grid();
     void draw_tracks();
+    void calc_new_times(double, double, double&, double&);
     void handle_click(XEvent e);
     void event_loop(); 
  };

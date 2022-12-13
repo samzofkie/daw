@@ -34,8 +34,8 @@ void Track::add(const char* filename, double start_time)
 void Track::draw(cairo_t *cr, double x, double y, double w,
     double h)
 {
-  double start_time = window->start_time;
-  double end_time = window->end_time;
+  //double start_time = window->start_time;
+  //double end_time = window->end_time;
 
   // Draw PCMs
   

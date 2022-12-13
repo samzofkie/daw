@@ -1,5 +1,5 @@
 CXX := g++
-opts:= -Wall -lm -std=c++17 `pkg-config --cflags --libs x11 cairo libpulse-simple`
+opts:= -Wall -g3 -std=c++17 `pkg-config --cflags --libs x11 cairo libpulse-simple`
 objs := main.o xwindow.o header.o track.o pcm.o pahandler.o
 
 daw: $(objs)

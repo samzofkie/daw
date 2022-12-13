@@ -99,18 +99,37 @@ void XWindow::draw_grid()
 
   // Vertical lines
   double beats_per_second = tempo/60;
+  //cout << "beats_per_second: " << beats_per_second << endl;
+  
   int first_beat = ceil(start_time * beats_per_second);
   int last_beat = floor(end_time * beats_per_second);
   last_beat = min(last_beat, (int)ceil(total_time * beats_per_second));
+  //cout << "first_beat: " << first_beat;
+  //cout << " last_beat: " << last_beat << endl;
+  
   double seconds_per_beat = 60/tempo;
+  cout << "seconds_per_beat: " << seconds_per_beat << endl;
+
   double offset_time = (first_beat * seconds_per_beat) - start_time;
+  //cout << "offset_time: " << offset_time << endl;
+
   double pixels_per_second = (wwidth - track_head_width) 
                             / (end_time - start_time);
+  cout << "wwidth: " << wwidth << " track_head_width: " << track_head_width;
+  cout << endl << "end_time: " << end_time << " start_time: " << start_time;
+  cout << endl;
+  cout << "pixels_per_second: " << pixels_per_second << endl;
+
   double offset_pixels = offset_time * pixels_per_second;
+  //cout << "offset_pixels: " << offset_pixels << endl;
+
   double pixels_per_beat = pixels_per_second * seconds_per_beat;
+  cout << "pixels_per_beat: " << pixels_per_beat << endl;
 
   for (double i = offset_pixels + track_head_width; 
       i<wwidth; i += pixels_per_beat) {
+    cout << i << endl;
+    if (i<0) exit(1);
     cairo_move_to(cr, i, header_height);
     cairo_line_to(cr, i, header_height + 
         tracks.size() * total_track_height);
@@ -120,7 +139,7 @@ void XWindow::draw_grid()
   for (vector<Track*>::size_type i=0; i<tracks.size()+1; i++) {
     cairo_move_to(cr, track_head_width, 
         total_track_height*i + header_height + 0.5);
-    double x = (beat_offset + last_possible_beat) * pixels_per_beat;
+    double x = last_beat * pixels_per_beat;
     x = floor(x) + 0.5 + track_head_width; 
     cairo_line_to(cr, min(x, wwidth),
         total_track_height*i + header_height + 0.5);
@@ -141,40 +160,65 @@ void XWindow::draw_tracks()
 }
 
 
+void XWindow::calc_new_times(double mouse_position, 
+    double delta, double& new_start_time, double& new_end_time)
+{
+  new_start_time = 
+    (start_time + mouse_position) * (delta + end_time);
+  new_start_time -= (2 * start_time * mouse_position);
+  new_start_time -= start_time * start_time;
+  new_start_time /= start_time - end_time + mouse_position;
+
+  new_end_time = 
+    (new_start_time + delta) * (end_time - mouse_position);
+  new_end_time /= (start_time + mouse_position);
+  new_end_time += mouse_position;
+}
+
+
+// Scroll logic
+  // x is mouse position (in seconds)
+  //   start_time + x / end_time - x = 
+  //   new_start_time + x / new_end_time - x
+  // to zoom in on whats underneath the cursor.
+  // But if we want the difference between
+  // start_time and new_start_time plus the difference
+  // between end_time and new_end_time to always be 
+  // a constant (like 0.25) we need:
+  //  | start_time - new_start_time | +
+  //  | new_end_time - end_time | = 0.25
 void XWindow::handle_click(XEvent e)
 {
   /*printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);*/
-  double x = max(0.0, e.xbutton.x - track_head_width);  
-  double ratio = x / (wwidth - track_head_width);
+  double x = max(0.0, e.xbutton.x - track_head_width); 
+  x = ((end_time - start_time) / 
+      (wwidth - track_head_width)) * x + start_time;
+  cout << "x: " << x << endl;
+  
+  double new_start_time, new_end_time;
   bool scrolled = false;
   
-  // Scroll logic
-  //   x is mouse position
-  //   start_time + x / end_time - x = 
-  //   new_start_time + x / new_end_time - x
-  // to zoom in on whats underneath the cursor
-  
+  // Scroll up ~> zoom out
   if (e.xbutton.button == 4) { 
-    // Scroll up? Zoom out
-    double new_start_time = start_time - ratio;
-    double new_end_time = (new_start_time + x) * (end_time - x) / (start_time + x) + x;
-    new_start_time = max(0.0, new_start_time);
-    start_time = new_start_time;
-    end_time = new_end_time;
-    scrolled = true;
-
-  } else if (e.xbutton.button == 5) { 
-    // Scroll down? Zoom in
-    double new_start_time = start_time + ratio;
-    double new_end_time = (new_start_time + x) * (end_time - x) / (start_time + x) + x;
-    new_end_time = max(0.1, new_end_time);
-    start_time = new_start_time;
-    end_time = new_end_time;
+    calc_new_times(x, 0.25, new_start_time,
+        new_end_time); 
     scrolled = true;
   }
+  
+  // Scroll down ~> zoom in
+  else if (e.xbutton.button == 5) { 
+    calc_new_times(x, -0.25, new_start_time,
+        new_end_time);
+    scrolled = true;
+  }
+
   if (scrolled) {
-    //cout << start_time << " " << end_time << endl;
+    cout << "start_time: " << start_time;
+    cout << " end_time: " << end_time << endl;
+    cout << "new_start_time: " << new_start_time;
+    cout << " new_end_time: " << new_end_time << endl;
+
     draw_grid();
     draw_tracks();          
   }
