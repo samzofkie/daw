@@ -41,9 +41,10 @@ class XWindow
     PAHandler *pa_sink;
 
     void create_window();
+    double global_time_to_adjusted_pixels(double);
     void draw_grid();
     void draw_tracks();
-    void calc_new_times(double, double, double&, double&);
+    double calc_start_time(double, double);
     void handle_click(XEvent e);
     void event_loop(); 
  };

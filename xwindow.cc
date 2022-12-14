@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -81,6 +82,21 @@ void XWindow::create_window()
 }
 
 
+double XWindow::global_time_to_adjusted_pixels(double time)
+{
+  assert(time >= start_time); 
+  assert(time <= end_time);
+
+  double total_time = end_time - start_time;
+  double relative_time = time - start_time;
+  double pixels_per_second = (wwidth - track_head_width)
+    / total_time;
+  double pixel = relative_time * pixels_per_second 
+      + track_head_width;
+  return pixel;
+}
+
+
 void XWindow::draw_grid()
 {
   // Black out underneath
@@ -92,56 +108,42 @@ void XWindow::draw_grid()
 
   double total_track_height = track_height + space_between_tracks;
 
-  // Initial line
-  cairo_move_to(cr, track_head_width+0.5, header_height);
-  cairo_line_to(cr, track_head_width+0.5, 
-      header_height + total_track_height*tracks.size());
-
   // Vertical lines
-  double beats_per_second = tempo/60;
-  //cout << "beats_per_second: " << beats_per_second << endl;
+  double beats_per_second = tempo/60; 
+  double seconds_per_beat = 60/tempo; 
+  double start_second = ceil(start_time * beats_per_second)
+    * seconds_per_beat;  
+  double first_pixel_x = 
+    global_time_to_adjusted_pixels(start_second);
   
-  int first_beat = ceil(start_time * beats_per_second);
-  int last_beat = floor(end_time * beats_per_second);
-  last_beat = min(last_beat, (int)ceil(total_time * beats_per_second));
-  //cout << "first_beat: " << first_beat;
-  //cout << " last_beat: " << last_beat << endl;
+  double last_pixel_x;
+  if (end_time < total_time)
+    last_pixel_x = wwidth;
+  else
+    last_pixel_x = global_time_to_adjusted_pixels(total_time); 
   
-  double seconds_per_beat = 60/tempo;
-  cout << "seconds_per_beat: " << seconds_per_beat << endl;
-
-  double offset_time = (first_beat * seconds_per_beat) - start_time;
-  //cout << "offset_time: " << offset_time << endl;
-
-  double pixels_per_second = (wwidth - track_head_width) 
-                            / (end_time - start_time);
-  cout << "wwidth: " << wwidth << " track_head_width: " << track_head_width;
-  cout << endl << "end_time: " << end_time << " start_time: " << start_time;
-  cout << endl;
-  cout << "pixels_per_second: " << pixels_per_second << endl;
-
-  double offset_pixels = offset_time * pixels_per_second;
-  //cout << "offset_pixels: " << offset_pixels << endl;
-
-  double pixels_per_beat = pixels_per_second * seconds_per_beat;
-  cout << "pixels_per_beat: " << pixels_per_beat << endl;
-
-  for (double i = offset_pixels + track_head_width; 
-      i<wwidth; i += pixels_per_beat) {
-    cout << i << endl;
+  double pixels_per_beat = (wwidth - track_head_width) /
+    (end_time - start_time) * seconds_per_beat;
+  
+  //cout << first_pixel_x << " " << last_pixel_x << endl;
+  //cout << pixels_per_beat << endl; 
+  for (double i = first_pixel_x; 
+      i <= last_pixel_x; 
+      i += pixels_per_beat) {
+    //cout << i << endl;
+    
     if (i<0) exit(1);
     cairo_move_to(cr, i, header_height);
     cairo_line_to(cr, i, header_height + 
         tracks.size() * total_track_height);
   }
+  //cout << endl;
       
   // Horizontal lines
   for (vector<Track*>::size_type i=0; i<tracks.size()+1; i++) {
     cairo_move_to(cr, track_head_width, 
         total_track_height*i + header_height + 0.5);
-    double x = last_beat * pixels_per_beat;
-    x = floor(x) + 0.5 + track_head_width; 
-    cairo_line_to(cr, min(x, wwidth),
+    cairo_line_to(cr, last_pixel_x,
         total_track_height*i + header_height + 0.5);
   } 
 
@@ -160,19 +162,12 @@ void XWindow::draw_tracks()
 }
 
 
-void XWindow::calc_new_times(double mouse_position, 
-    double delta, double& new_start_time, double& new_end_time)
+double XWindow::calc_start_time(double mouse_position, 
+    double new_end_time)
 {
-  new_start_time = 
-    (start_time + mouse_position) * (delta + end_time);
-  new_start_time -= (2 * start_time * mouse_position);
-  new_start_time -= start_time * start_time;
-  new_start_time /= start_time - end_time + mouse_position;
+  return ((new_end_time - mouse_position) * (mouse_position - start_time)
+    / (mouse_position - end_time)) + mouse_position;
 
-  new_end_time = 
-    (new_start_time + delta) * (end_time - mouse_position);
-  new_end_time /= (start_time + mouse_position);
-  new_end_time += mouse_position;
 }
 
 
@@ -191,33 +186,36 @@ void XWindow::handle_click(XEvent e)
 {
   /*printf("Click! @ (%d, %d) by button %u\n", 
             e.xbutton.x, e.xbutton.y, e.xbutton.button);*/
+  double total_time = end_time - start_time;
+  
   double x = max(0.0, e.xbutton.x - track_head_width); 
-  x = ((end_time - start_time) / 
+  x = (total_time / 
       (wwidth - track_head_width)) * x + start_time;
-  cout << "x: " << x << endl;
   
-  double new_start_time, new_end_time;
   bool scrolled = false;
-  
+  double proportion;
+
   // Scroll up ~> zoom out
-  if (e.xbutton.button == 4) { 
-    calc_new_times(x, 0.25, new_start_time,
-        new_end_time); 
+  if (e.xbutton.button == 4) {
+    proportion = 1.2;
     scrolled = true;
   }
   
   // Scroll down ~> zoom in
   else if (e.xbutton.button == 5) { 
-    calc_new_times(x, -0.25, new_start_time,
-        new_end_time);
+    proportion = 0.8;
     scrolled = true;
   }
 
   if (scrolled) {
-    cout << "start_time: " << start_time;
-    cout << " end_time: " << end_time << endl;
-    cout << "new_start_time: " << new_start_time;
-    cout << " new_end_time: " << new_end_time << endl;
+    double new_end_time = (1-proportion) * x 
+      + (proportion*end_time);
+    double new_start_time = calc_start_time(x, new_end_time);
+    if (new_start_time < 0)
+      new_start_time = 0;
+    
+    start_time = new_start_time;
+    end_time = new_end_time;
 
     draw_grid();
     draw_tracks();          
