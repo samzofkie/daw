@@ -16,7 +16,7 @@ using namespace std;
 
 
 XWindow::XWindow() :
-  wwidth(1000), wheight(1000),
+  window_width(1000), window_height(1000),
   total_time(3),
   start_time(0),
   end_time(4),
@@ -39,7 +39,7 @@ XWindow::XWindow() :
     tracks.push_back(new Track(this));
 
   PCM *snare = new PCM("data/snare.wav");
-  tracks[1]->add(snare);
+  tracks[1]->add_pcm(snare);
 
   event_loop();
 }
@@ -64,7 +64,7 @@ void XWindow::create_window()
   }
   screen = DefaultScreen(display);
   window = XCreateSimpleWindow(display, DefaultRootWindow(display),
-                               0, 0, wwidth, wheight, 
+                               0, 0, window_width, window_height, 
                                0, 0, 0);
   XSelectInput(display, window, ButtonPressMask | KeyPressMask | ExposureMask);
   XMapWindow(display, window);
@@ -84,12 +84,15 @@ void XWindow::create_window()
 
 double XWindow::global_time_to_adjusted_pixels(double time)
 {
+  cout << start_time << " ";
+  cout << time << " ";
+  cout << end_time << endl;
   assert(time >= start_time); 
   assert(time <= end_time);
 
   double total_time = end_time - start_time;
   double relative_time = time - start_time;
-  double pixels_per_second = (wwidth - track_head_width)
+  double pixels_per_second = (window_width - track_head_width)
     / total_time;
   double pixel = relative_time * pixels_per_second 
       + track_head_width;
@@ -101,8 +104,8 @@ void XWindow::draw_grid()
 {
   // Black out underneath
   cairo_rectangle(cr, track_head_width,
-              header_height, wwidth - track_head_width,
-              wheight - header_height);
+              header_height, window_width - track_head_width,
+              window_height - header_height);
   cairo_set_source_rgb(cr, 0, 0, 0);
   cairo_fill(cr);
 
@@ -118,17 +121,17 @@ void XWindow::draw_grid()
   
   double last_pixel_x;
   if (end_time < total_time)
-    last_pixel_x = wwidth;
+    last_pixel_x = window_width;
   else
     last_pixel_x = global_time_to_adjusted_pixels(total_time); 
   
-  double pixels_per_beat = (wwidth - track_head_width) /
+  double pixels_per_beat = (window_width - track_head_width) /
     (end_time - start_time) * seconds_per_beat;
   
   //cout << first_pixel_x << " " << last_pixel_x << endl;
   //cout << pixels_per_beat << endl; 
   for (double i = first_pixel_x; 
-      i <= last_pixel_x; 
+      i <= last_pixel_x+1; 
       i += pixels_per_beat) {
     //cout << i << endl;
     
@@ -158,7 +161,7 @@ void XWindow::draw_tracks()
   for (vector<Track*>::size_type i=0; i<tracks.size(); i++)
     tracks[i]->draw(cr, 0, 
         i*(track_height+space_between_tracks) + space_between_tracks/2 + header_height,
-                wwidth, track_height);
+                window_width, track_height);
 }
 
 
@@ -190,7 +193,7 @@ void XWindow::handle_click(XEvent e)
   
   double x = max(0.0, e.xbutton.x - track_head_width); 
   x = (total_time / 
-      (wwidth - track_head_width)) * x + start_time;
+      (window_width - track_head_width)) * x + start_time;
   
   bool scrolled = false;
   double proportion;
@@ -243,10 +246,10 @@ void XWindow::event_loop()
         break;
 
       case Expose:
-        wwidth = e.xexpose.width;
-        wheight = e.xexpose.height;
+        window_width = e.xexpose.width;
+        window_height = e.xexpose.height;
         
-        header->draw(cr, 0, 0, wwidth, header_height);
+        header->draw(cr, 0, 0, window_width, header_height);
         draw_grid();
         draw_tracks();
         break;

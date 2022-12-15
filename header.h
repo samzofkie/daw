@@ -12,7 +12,7 @@ class Header
     ~Header();
     void draw(cairo_t *, double, double, double, double);
   private:
-    XWindow *window;
+    XWindow *parent_window;
     double loop_area_height; 
 };
 

@@ -78,7 +78,7 @@ void PCM::read_wav_data(ifstream& ifs)
     
     int16_t a = (int16_t)sample;
             
-    data.push_back(a);
+    samples.push_back(a);
   }
 }
 
@@ -86,20 +86,17 @@ void PCM::read_wav_data(ifstream& ifs)
 void PCM::fft()
 {
   complex<double> I(0,1);
-  for (ulong i=0; i<data.size(); i++) {
+  for (ulong i=0; i<samples.size(); i++) {
     complex<double> sum(0,0);
-    for (ulong j=0; j<data.size(); j++) {
+    for (ulong j=0; j<samples.size(); j++) {
       complex<double> term = -I * 2.0 * M_PI * (double)i 
-                             * (double)j / (double)data.size();
-      term = (double)data[j] * exp(term);
+                             * (double)j / (double)samples.size();
+      term = (double)samples[j] * exp(term);
       sum += term;
     }
     fourier_series.push_back(sum);
-    //cout << fixed << sum.real() << endl;
   }
   const auto [min, max] = minmax(begin(fourier_series), end(fourier_series));
-  cout << fixed << *min << endl << *max << endl;
-  cout << fourier_series.size() << endl;
 }
 
 void PCM::sine_gen(int length, int freq)
@@ -108,15 +105,11 @@ void PCM::sine_gen(int length, int freq)
     double x = freq * 2 * M_PI * i;
     x /= 44100;
     x = sin(x) * 20000;
-    /*if (x>0)
-      x = 30000;
-    else
-      x = -30000;*/
     int r = rand() % 10000 - 5000;
     if (r>0)
       x = min(32767.0, x+r);
     else
       x = max(0.0,x+r);
-    data.push_back((int16_t)r*3);
+    samples.push_back((int16_t)r*3);
   }
 }

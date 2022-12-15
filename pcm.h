@@ -14,11 +14,12 @@ struct WavHeader {
   uint32_t data_size;
 };
 
+
 class PCM
 {
   public:
     WavHeader header;
-    std::vector<int16_t> data;
+    std::vector<int16_t> samples;
     std::vector<std::complex<double>> fourier_series;
    
     PCM(int,int); 
@@ -30,8 +31,6 @@ class PCM
     void read_wav_data(std::ifstream&);
     void fft();
     void sine_gen(int, int);
-
-
 };
 
 #endif

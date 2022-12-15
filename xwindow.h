@@ -15,7 +15,7 @@ class XWindow
     ~XWindow();
 
     // Master info 
-    double wwidth, wheight;
+    double window_width, window_height;
     double total_time, start_time, end_time;
     double tempo;
     unsigned int sample_rate;

@@ -6,7 +6,7 @@ using namespace std;
 
 
 Header::Header(XWindow* window) :
-  window(window),
+  parent_window(window),
   loop_area_height(25)
 {}
 
@@ -48,16 +48,16 @@ void Header::draw(cairo_t *cr, double x, double y,
 
 
   // Draw loop area
-  rounded_rect(cr, window->track_head_width, 
+  rounded_rect(cr, parent_window->track_head_width, 
       (h - loop_area_height) - border_width,
-      x+w - window->track_head_width,
+      x+w - parent_window->track_head_width,
       loop_area_height, 10);
   cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
   cairo_stroke(cr);
 
   // Draw tempo graph area
-  rounded_rect(cr, window->track_head_width, border_width,
-      x+w - window->track_head_width - border_width, 
+  rounded_rect(cr, parent_window->track_head_width, border_width,
+      x+w - parent_window->track_head_width - border_width, 
       h-(border_width*2)-loop_area_height, 10);
   cairo_stroke_preserve(cr);
   cairo_set_source_rgb(cr, 1, 1, 1);
@@ -67,7 +67,7 @@ void Header::draw(cairo_t *cr, double x, double y,
   cairo_select_font_face (cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
                                CAIRO_FONT_WEIGHT_BOLD);
   cairo_set_font_size (cr, 10);
-  cairo_move_to(cr, window->track_head_width+2, border_width+10);
+  cairo_move_to(cr, parent_window->track_head_width+2, border_width+10);
   cairo_text_path(cr, "Tempo");
   cairo_set_source_rgb(cr, 0, 0, 0);
   cairo_fill(cr);

@@ -12,8 +12,8 @@ class Track
   public:
     Track(XWindow*);
     ~Track();
-    void add(PCM*, double start_time=0);
-    void add(const char*, double start_time=0);
+    void add_pcm(PCM*, double start_time=0);
+    void add_pcm(const char*, double start_time=0);
     void draw(cairo_t*, double, double, double,
         double);
     
@@ -23,7 +23,7 @@ class Track
       double c0, c1, c2;
     }; 
     std::vector<PCMRegion> pcm_regions;
-    XWindow *window;
+    XWindow *parent_window;
 };
 
 double* rand_color();

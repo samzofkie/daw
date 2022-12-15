@@ -9,10 +9,10 @@ using namespace std;
 
 
 Track::Track(XWindow *window) :
-  window(window) {}
+  parent_window(window) {}
 
 
-void Track::add(PCM *pcm, double start_time)
+void Track::add_pcm(PCM *pcm, double start_time)
 {
   double c0 = (double)rand() / RAND_MAX;
   double c1 = (double)rand() / RAND_MAX;
@@ -21,7 +21,7 @@ void Track::add(PCM *pcm, double start_time)
 }
 
 
-void Track::add(const char* filename, double start_time)
+void Track::add_pcm(const char* filename, double start_time)
 {
   double c0 = (double)rand() / RAND_MAX;
   double c1 = (double)rand() / RAND_MAX;
@@ -34,14 +34,11 @@ void Track::add(const char* filename, double start_time)
 void Track::draw(cairo_t *cr, double x, double y, double w,
     double h)
 {
-  //double start_time = window->start_time;
-  //double end_time = window->end_time;
-
   // Draw PCMs
   
   // Draw track head
-  double side_space = window->space_between_tracks/2;
-  double head_width = window->track_head_width;
+  double side_space = parent_window->space_between_tracks/2;
+  double head_width = parent_window->track_head_width;
   cairo_move_to(cr, head_width + 10, y);
   cairo_line_to(cr, side_space, y);
   cairo_line_to(cr, side_space, y+h);
@@ -51,7 +48,8 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
       head_width + 10, y);
   cairo_close_path(cr);
     
-  cairo_set_source_surface(cr, window->track_head_fill, 0, y);
+  cairo_set_source_surface(cr, 
+      parent_window->track_head_fill, 0, y);
   cairo_fill(cr);
 }
 

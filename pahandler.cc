@@ -38,8 +38,8 @@ PAHandler::~PAHandler()
 void PAHandler::play(PCM pcm)
 {
   int error;
-  for (uint i=0; i <= pcm.data.size() / buffer_size; i++) {
-    if (pa_simple_write(s, &pcm.data[i*buffer_size], (size_t)buffer_size, &error) < 0)
+  for (uint i=0; i <= pcm.samples.size() / buffer_size; i++) {
+    if (pa_simple_write(s, &pcm.samples[i*buffer_size], (size_t)buffer_size, &error) < 0)
       fprintf(stderr, __FILE__": pa_simple_write() failed: %s\n", pa_strerror(error));
   }
 
