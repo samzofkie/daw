@@ -14,6 +14,8 @@ class XWindow
     XWindow();
     ~XWindow();
 
+    cairo_t *cr;
+
     // Master info 
     double window_width, window_height;
     double total_time, start_time, end_time;
@@ -34,7 +36,6 @@ class XWindow
     int screen;
     Drawable window; 
     cairo_surface_t *cairo_surf;
-    cairo_t *cr;
     
     std::vector<Track*> tracks;
     Header *header;

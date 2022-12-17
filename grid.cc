@@ -20,7 +20,7 @@ void Grid::draw(double x, double y,
 }
 
 
-void black_out_background(double x, double y,
+void Grid::black_out_background(double x, double y,
     double w, double h)
 {
   cairo_rectangle(cr, x, y, w, h);
@@ -29,7 +29,7 @@ void black_out_background(double x, double y,
 }
 
 
-void draw_vertical_lines(double x, double y,
+void Grid::draw_vertical_lines(double x, double y,
     double w, double h)
 {
   double start_time = parent_window->start_time;
@@ -44,7 +44,7 @@ void draw_vertical_lines(double x, double y,
 }
 
 
-void draw_horizontal_lines(double x, double y,
+void Grid::draw_horizontal_lines(double x, double y,
     double w, double h)
 {
 
