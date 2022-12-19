@@ -1,8 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-project(daw_test)
-
-set(CMAKE_CXX_STANDARD 14)
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -18,6 +13,7 @@ add_executable(
   daw_test
   test.cc
 )
+
 target_link_libraries(
   daw_test
   GTest::gtest_main
