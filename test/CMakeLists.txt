@@ -9,15 +9,15 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(
-  daw_test
-  test.cc
+add_executable(daw_test test.cc)
+
+target_link_libraries(daw_test libdaw)
+target_include_directories(daw_test PUBLIC
+  "${PROJECT_BINARY_DIR}"
+  "${PROJECT_SOURCE_DIR}/src"
 )
 
-target_link_libraries(
-  daw_test
-  GTest::gtest_main
-)
+target_link_libraries(daw_test GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(daw_test)
