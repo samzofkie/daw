@@ -2,6 +2,7 @@
 
 int main(int argc, char *argv[])
 {  
-  XWindow();
+  XWindow daw;
+  daw.event_loop();
   return 0;
 }

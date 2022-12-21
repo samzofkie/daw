@@ -26,7 +26,7 @@ XWindow::XWindow() :
   space_between_tracks(5),
   track_head_width(175),
   track_head_fill(
-      cairo_image_surface_create_from_png("data/steel.png")),
+      cairo_image_surface_create_from_png("../data/steel.png")),
   header_height(100),
   header(new Header(this)),
   pa_sink(new PAHandler(4096))
@@ -38,10 +38,10 @@ XWindow::XWindow() :
   for (int i=0; i<8; i++)
     tracks.push_back(new Track(this));
 
-  PCM *snare = new PCM("data/snare.wav");
+  PCM *snare = new PCM("../data/snare.wav");
   tracks[1]->add_pcm(snare);
 
-  event_loop();
+  //event_loop();
 }
 
 

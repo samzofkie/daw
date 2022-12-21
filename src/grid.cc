@@ -29,18 +29,25 @@ void Grid::black_out_background(double x, double y,
 }
 
 
+double Grid::CalcFirstVisibleBeatTime(double start_time,
+    double end_time, double tempo)
+{
+  // tempo bpm, tempo/60.0 bpsecond, 
+  // 60.0/tempo seconds per beat
+  return ceil(start_time * tempo/60.0) * 60.0/tempo;
+}
+
+
 void Grid::draw_vertical_lines(double x, double y,
     double w, double h)
 {
   double start_time = parent_window->start_time;
   double end_time = parent_window->end_time;
   double tempo = parent_window->tempo;
-  double total_time = parent_window->total_time;
+  //double total_time = parent_window->total_time;
 
-  double beats_per_second = tempo/60;
-  // First visible beat is at second
   double first_visible_beat_time = 
-    ceil(start_time * beats_per_second) * 60/tempo;
+    CalcFirstVisibleBeatTime(start_time, end_time, tempo);
 }
 
 

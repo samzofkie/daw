@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include "xwindow.h"
+#include "grid.h"
 
-// Demonstrate some basic assertions.
-TEST(HelloTest, BasicAssertions) {
-  // Expect two strings not to be equal.
-  EXPECT_STRNE("hello", "world");
-  // Expect equality.
-  EXPECT_EQ(7 * 6, 42);
+TEST(GridTests, CalcFirstVisibleBeatTimeTest)
+{
+  XWindow xwindow;
+  Grid grid = Grid(&xwindow);
+  EXPECT_EQ(grid.CalcFirstVisibleBeatTime(0,10,120), 0);
+  EXPECT_EQ(grid.CalcFirstVisibleBeatTime(1.1,10,120), 1.5); 
 }
-

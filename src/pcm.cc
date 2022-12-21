@@ -20,7 +20,7 @@ PCM::PCM(const char* filename)
 {
   std::ifstream ifs (filename, std::ios::in | std::ios::binary); 
   if (!ifs) {
-    std::cerr << "failed to open /home/sa/snare.wav" << endl;
+    std::cerr << "Failed to open " << filename << endl;
     return;
   }
   read_wav_header(ifs);
