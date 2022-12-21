@@ -32,18 +32,19 @@ XWindow::XWindow() :
   pa_sink(new PAHandler(4096))
 {
   srand(time(NULL));
-    
-  create_window(); 
-  
+     
   for (int i=0; i<8; i++)
     tracks.push_back(new Track(this));
 
   PCM *snare = new PCM("../data/snare.wav");
   tracks[1]->add_pcm(snare);
-
-  //event_loop();
 }
 
+void XWindow::Start()
+{ 
+  create_window();
+  event_loop();
+}
 
 XWindow::~XWindow()
 {

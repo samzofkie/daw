@@ -29,7 +29,7 @@ class XWindow
     
     double header_height;
 
-    void event_loop(); 
+    void Start(); 
   
  private:
     // Window stuff
@@ -48,6 +48,7 @@ class XWindow
     void draw_tracks();
     double calc_start_time(double, double);
     void handle_click(XEvent e);
+    void event_loop();
  };
 
 void rounded_rect(cairo_t *cr, 

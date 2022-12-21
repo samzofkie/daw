@@ -3,6 +3,6 @@
 int main(int argc, char *argv[])
 {  
   XWindow daw;
-  daw.event_loop();
+  daw.Start();
   return 0;
 }

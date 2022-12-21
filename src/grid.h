@@ -19,7 +19,8 @@ class Grid
     Grid(XWindow *);
     void draw(double, double, double, double);
     
-    double CalcFirstVisibleBeatTime(double, double, double);
+    void CalcFirstAndLastVisibleBeatTimes(double, 
+        double, double, double*, double*);
   private:
     XWindow *parent_window;
     cairo_t *cr;
