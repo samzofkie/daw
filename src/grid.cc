@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 #include <cairo.h>
 #include "xwindow.h"
 #include "grid.h"
@@ -55,6 +56,27 @@ void Grid::draw_vertical_lines(double x, double y,
   double first_visible_beat_time, last_visible_beat_time;
   CalcFirstAndLastVisibleBeatTimes(start_time, end_time, tempo,
       &first_visible_beat_time, &last_visible_beat_time);
+
+  double JustPassedEndTimeVisibleBeatTime = 
+    ceil(end_time * tempo/6.0) * 60.0/tempo;
+  
+  double LastBeatTime = min(last_visible_beat_time,
+      JustPassedEndTimeVisibleBeatTime);
+
+  assert (LastBeatTime >= first_visible_beat_time);
+  double TotalPixels = w;
+  double TotalSeconds = end_time - start_time;
+  double PixelsPerSecond = TotalPixels / TotalSeconds;
+  for (double i = max(first_visible_beat_time, 0.0);
+       i <= LastBeatTime; i += tempo/60.0) {
+    double pixel_x = i * PixelsPerSecond;
+    pixel_x = floor(pixel_x) + 0.5;
+    cairo_move_to(cr, x+pixel_x, y);
+    cairo_line_to(cr, x+pixel_x, y+h);
+  }
+  cairo_set_source_rgb(cr, 1, 1, 1);
+  cairo_stroke(cr);
+
 }
 
 

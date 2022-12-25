@@ -6,6 +6,7 @@
 
 #include "header.h"
 #include "track.h"
+#include "grid.h"
 #include "pahandler.h"
 
 class XWindow
@@ -40,11 +41,12 @@ class XWindow
     
     std::vector<Track*> tracks;
     Header *header;
+    Grid *grid;
     PAHandler *pa_sink;
 
     void create_window();
-    double global_time_to_adjusted_pixels(double);
-    void draw_grid();
+    //double global_time_to_adjusted_pixels(double);
+    //void draw_grid();
     void draw_tracks();
     double calc_start_time(double, double);
     void handle_click(XEvent e);

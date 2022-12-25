@@ -29,6 +29,7 @@ XWindow::XWindow() :
       cairo_image_surface_create_from_png("../data/steel.png")),
   header_height(100),
   header(new Header(this)),
+  grid(new Grid(this)),
   pa_sink(new PAHandler(4096))
 {
   srand(time(NULL));
@@ -40,17 +41,20 @@ XWindow::XWindow() :
   tracks[1]->add_pcm(snare);
 }
 
+
 void XWindow::Start()
 { 
   create_window();
   event_loop();
 }
 
+
 XWindow::~XWindow()
 {
   XCloseDisplay(display);
   cairo_surface_destroy(track_head_fill);
   delete header;
+  delete grid;
   for (Track *track : tracks)
     delete track;
   delete pa_sink;
@@ -82,7 +86,7 @@ void XWindow::create_window()
   cr = cairo_create(cairo_surf);
 }
 
-
+/*
 double XWindow::global_time_to_adjusted_pixels(double time)
 {
   cout << start_time << " ";
@@ -155,7 +159,7 @@ void XWindow::draw_grid()
   cairo_set_line_width(cr, 1);
   cairo_stroke(cr);
 }
-
+*/
 
 void XWindow::draw_tracks()
 {
@@ -220,8 +224,12 @@ void XWindow::handle_click(XEvent e)
     
     start_time = new_start_time;
     end_time = new_end_time;
-
-    draw_grid();
+    
+    grid->draw(track_head_width, header_height,
+       window_width - track_head_width,
+       window_height - header_height); 
+         
+    //draw_grid();
     draw_tracks();          
   }
 
@@ -251,7 +259,11 @@ void XWindow::event_loop()
         window_height = e.xexpose.height;
         
         header->draw(cr, 0, 0, window_width, header_height);
-        draw_grid();
+        grid->draw(track_head_width, header_height,
+          window_width - track_head_width,
+          window_height - header_height); 
+        
+        //draw_grid();
         draw_tracks();
         break;
 
