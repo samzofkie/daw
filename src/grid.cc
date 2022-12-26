@@ -7,9 +7,10 @@ using namespace std;
 
 
 Grid::Grid(XWindow* window) :
-  parent_window(window),
-  cr(parent_window->cr)
-{}
+  parent_window(window)
+{
+  cr = parent_window->cr;
+}
 
 
 void Grid::draw(double x, double y,
@@ -24,7 +25,9 @@ void Grid::draw(double x, double y,
 void Grid::black_out_background(double x, double y,
     double w, double h)
 {
-  cairo_rectangle(cr, x, y, w, h);
+
+  cout << "got here\n";
+  cairo_rectangle(cr, x, y, w, h); 
   cairo_set_source_rgb(cr, 0, 0, 0);
   cairo_fill(cr);
 }
@@ -57,11 +60,13 @@ void Grid::draw_vertical_lines(double x, double y,
   CalcFirstAndLastVisibleBeatTimes(start_time, end_time, tempo,
       &first_visible_beat_time, &last_visible_beat_time);
 
-  double JustPassedEndTimeVisibleBeatTime = 
-    ceil(end_time * tempo/6.0) * 60.0/tempo;
-  
+  double JustPassedTotalTimeVisibleBeatTime = 
+    ceil(parent_window->total_time * tempo/6.0) * 60.0/tempo;
+  cout << "JustPassedTotal: " << JustPassedTotalTimeVisibleBeatTime
+   << endl; 
   double LastBeatTime = min(last_visible_beat_time,
-      JustPassedEndTimeVisibleBeatTime);
+      JustPassedTotalTimeVisibleBeatTime);
+  cout << "LastBeatTime: " << LastBeatTime << endl;
 
   assert (LastBeatTime >= first_visible_beat_time);
   double TotalPixels = w;
@@ -69,6 +74,7 @@ void Grid::draw_vertical_lines(double x, double y,
   double PixelsPerSecond = TotalPixels / TotalSeconds;
   for (double i = max(first_visible_beat_time, 0.0);
        i <= LastBeatTime; i += tempo/60.0) {
+    cout << i << endl;
     double pixel_x = i * PixelsPerSecond;
     pixel_x = floor(pixel_x) + 0.5;
     cairo_move_to(cr, x+pixel_x, y);

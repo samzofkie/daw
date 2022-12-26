@@ -28,11 +28,12 @@ XWindow::XWindow() :
   track_head_fill(
       cairo_image_surface_create_from_png("../data/steel.png")),
   header_height(100),
-  header(new Header(this)),
-  grid(new Grid(this)),
   pa_sink(new PAHandler(4096))
 {
   srand(time(NULL));
+
+  header = new Header(this);
+  grid = new Grid(this);
      
   for (int i=0; i<8; i++)
     tracks.push_back(new Track(this));
@@ -259,11 +260,12 @@ void XWindow::event_loop()
         window_height = e.xexpose.height;
         
         header->draw(cr, 0, 0, window_width, header_height);
+        
         grid->draw(track_head_width, header_height,
           window_width - track_head_width,
           window_height - header_height); 
         
-        //draw_grid();
+        //draw_grid()
         draw_tracks();
         break;
 
