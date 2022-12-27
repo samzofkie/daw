@@ -31,6 +31,8 @@ XWindow::XWindow() :
   pa_sink(new PAHandler(4096))
 {
   srand(time(NULL));
+  
+  create_window();
 
   header = new Header(this);
   grid = new Grid(this);
@@ -45,7 +47,7 @@ XWindow::XWindow() :
 
 void XWindow::Start()
 { 
-  create_window();
+  // create_window();
   event_loop();
 }
 
@@ -87,80 +89,6 @@ void XWindow::create_window()
   cr = cairo_create(cairo_surf);
 }
 
-/*
-double XWindow::global_time_to_adjusted_pixels(double time)
-{
-  cout << start_time << " ";
-  cout << time << " ";
-  cout << end_time << endl;
-  assert(time >= start_time); 
-  assert(time <= end_time);
-
-  double total_time = end_time - start_time;
-  double relative_time = time - start_time;
-  double pixels_per_second = (window_width - track_head_width)
-    / total_time;
-  double pixel = relative_time * pixels_per_second 
-      + track_head_width;
-  return pixel;
-}
-
-
-void XWindow::draw_grid()
-{
-  // Black out underneath
-  cairo_rectangle(cr, track_head_width,
-              header_height, window_width - track_head_width,
-              window_height - header_height);
-  cairo_set_source_rgb(cr, 0, 0, 0);
-  cairo_fill(cr);
-
-  double total_track_height = track_height + space_between_tracks;
-
-  // Vertical lines
-  double beats_per_second = tempo/60; 
-  double seconds_per_beat = 60/tempo; 
-  double start_second = ceil(start_time * beats_per_second)
-    * seconds_per_beat;  
-  double first_pixel_x = 
-    global_time_to_adjusted_pixels(start_second);
-  
-  double last_pixel_x;
-  if (end_time < total_time)
-    last_pixel_x = window_width;
-  else
-    last_pixel_x = global_time_to_adjusted_pixels(total_time); 
-  
-  double pixels_per_beat = (window_width - track_head_width) /
-    (end_time - start_time) * seconds_per_beat;
-  
-  //cout << first_pixel_x << " " << last_pixel_x << endl;
-  //cout << pixels_per_beat << endl; 
-  for (double i = first_pixel_x; 
-      i <= last_pixel_x+1; 
-      i += pixels_per_beat) {
-    //cout << i << endl;
-    
-    if (i<0) exit(1);
-    cairo_move_to(cr, i, header_height);
-    cairo_line_to(cr, i, header_height + 
-        tracks.size() * total_track_height);
-  }
-  //cout << endl;
-      
-  // Horizontal lines
-  for (vector<Track*>::size_type i=0; i<tracks.size()+1; i++) {
-    cairo_move_to(cr, track_head_width, 
-        total_track_height*i + header_height + 0.5);
-    cairo_line_to(cr, last_pixel_x,
-        total_track_height*i + header_height + 0.5);
-  } 
-
-  cairo_set_source_rgb(cr, 1, 1, 1);
-  cairo_set_line_width(cr, 1);
-  cairo_stroke(cr);
-}
-*/
 
 void XWindow::draw_tracks()
 {
@@ -226,7 +154,7 @@ void XWindow::handle_click(XEvent e)
     start_time = new_start_time;
     end_time = new_end_time;
     
-    grid->draw(track_head_width, header_height,
+    grid->draw(cr, track_head_width, header_height,
        window_width - track_head_width,
        window_height - header_height); 
          
@@ -261,11 +189,10 @@ void XWindow::event_loop()
         
         header->draw(cr, 0, 0, window_width, header_height);
         
-        grid->draw(track_head_width, header_height,
+        grid->draw(cr, track_head_width, header_height,
           window_width - track_head_width,
           window_height - header_height); 
         
-        //draw_grid()
         draw_tracks();
         break;
 

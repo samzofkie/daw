@@ -9,25 +9,22 @@ using namespace std;
 Grid::Grid(XWindow* window) :
   parent_window(window)
 {
-  cr = parent_window->cr;
 }
 
 
-void Grid::draw(double x, double y,
+void Grid::draw(cairo_t *cr, double x, double y,
     double w, double h)
 {
-  black_out_background(x,y,w,h);
-  draw_vertical_lines(x,y,w,h);
-  draw_horizontal_lines(x,y,w,h);
+  black_out_background(cr,x,y,w,h);
+  draw_vertical_lines(cr,x,y,w,h);
+  draw_horizontal_lines(cr,x,y,w,h);
 }
 
 
-void Grid::black_out_background(double x, double y,
+void Grid::black_out_background(cairo_t* cr, double x, double y,
     double w, double h)
 {
-
-  cout << "got here\n";
-  cairo_rectangle(cr, x, y, w, h); 
+  cairo_rectangle(cr, x, y, w, h);  
   cairo_set_source_rgb(cr, 0, 0, 0);
   cairo_fill(cr);
 }
@@ -48,7 +45,7 @@ void Grid::CalcFirstAndLastVisibleBeatTimes(double start_time,
 }
 
 
-void Grid::draw_vertical_lines(double x, double y,
+void Grid::draw_vertical_lines(cairo_t *cr, double x, double y,
     double w, double h)
 {
   double start_time = parent_window->start_time;
@@ -86,7 +83,8 @@ void Grid::draw_vertical_lines(double x, double y,
 }
 
 
-void Grid::draw_horizontal_lines(double x, double y,
+void Grid::draw_horizontal_lines(cairo_t* cr,
+    double x, double y,
     double w, double h)
 {
 

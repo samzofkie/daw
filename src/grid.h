@@ -1,6 +1,8 @@
 #ifndef GRID_H
 #define GRID_H
 
+#include <cairo.h>
+
 class XWindow;
 
 /* Grid is created and held by the top level XWindow. When the 
@@ -17,16 +19,15 @@ class Grid
 {
   public:
     Grid(XWindow *);
-    void draw(double, double, double, double);
+    void draw(cairo_t*, double, double, double, double);
     
     void CalcFirstAndLastVisibleBeatTimes(double, 
         double, double, double*, double*);
   private:
     XWindow *parent_window;
-    cairo_t *cr;
-    void black_out_background(double, double, double, double);
-    void draw_vertical_lines(double, double, double, double);
-    void draw_horizontal_lines(double, double, double, double);
+    void black_out_background(cairo_t*, double, double, double, double);
+    void draw_vertical_lines(cairo_t*, double, double, double, double);
+    void draw_horizontal_lines(cairo_t*, double, double, double, double);
 };
 
 #endif //HEADER_H
