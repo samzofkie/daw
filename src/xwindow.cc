@@ -17,7 +17,7 @@ using namespace std;
 
 XWindow::XWindow() :
   window_width(1000), window_height(1000),
-  total_time(3),
+  total_time(10),
   start_time(0),
   end_time(4),
   tempo(120),
@@ -37,10 +37,10 @@ XWindow::XWindow() :
   header = new Header(this);
   grid = new Grid(this);
      
-  for (int i=0; i<8; i++)
+  for (int i=0; i<3; i++)
     tracks.push_back(new Track(this));
 
-  PCM *snare = new PCM("../data/snare.wav");
+  PCM *snare = new PCM("../data/snare.wav", sample_rate);
   tracks[1]->add_pcm(snare);
 }
 

@@ -4,20 +4,19 @@
 #include <math.h>
 #include <algorithm>
 #include <stdlib.h>
+#include <time.h>
 
 #include "pcm.h"
 
 using namespace std;
 
 
-PCM::PCM(int length, int freq)
+PCM::PCM(const char* filename, double srate) :
+  start_time(0),
+  sample_rate(srate),
+  color(RandomColor())
 {
-  sine_gen(length, freq);
-}
-
-
-PCM::PCM(const char* filename)
-{
+  srand(time(NULL));
   std::ifstream ifs (filename, std::ios::in | std::ios::binary); 
   if (!ifs) {
     std::cerr << "Failed to open " << filename << endl;
@@ -28,7 +27,18 @@ PCM::PCM(const char* filename)
  
   ifs.close();
 
-  //fft();
+  length = static_cast<double>(samples.size()) 
+    / sample_rate;
+}
+
+
+PCM::Color PCM::RandomColor()
+{
+  Color c;
+  c.c0 = rand() / RAND_MAX;
+  c.c1 = rand() / RAND_MAX;
+  c.c2 = 2.25 - c.c0 - c.c1;
+  return c;
 }
 
 
@@ -83,7 +93,7 @@ void PCM::read_wav_data(ifstream& ifs)
 }
 
 
-void PCM::fft()
+/*void PCM::fft()
 {
   complex<double> I(0,1);
   for (ulong i=0; i<samples.size(); i++) {
@@ -99,6 +109,7 @@ void PCM::fft()
   const auto [min, max] = minmax(begin(fourier_series), end(fourier_series));
 }
 
+
 void PCM::sine_gen(int length, int freq)
 {
   for (int i=0; i<length; i++) {
@@ -112,4 +123,4 @@ void PCM::sine_gen(int length, int freq)
       x = max(0.0,x+r);
     samples.push_back((int16_t)r*3);
   }
-}
+}*/

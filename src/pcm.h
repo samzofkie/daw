@@ -22,15 +22,24 @@ class PCM
     std::vector<int16_t> samples;
     std::vector<std::complex<double>> fourier_series;
    
-    PCM(int,int); 
-    PCM(const char*);
+    PCM(const char*, double);
+    double start_time;
+    double sample_rate;
+    double length;
+  
+    struct Color {
+      double c0, c1, c2;
+    };
+
+    Color color;
 
   private:
     void read_wav_header(std::ifstream&);
     void print_wav_header(WavHeader);
     void read_wav_data(std::ifstream&);
-    void fft();
-    void sine_gen(int, int);
+    Color RandomColor();
+    //void fft();
+    //void sine_gen(int, int);
 };
 
 #endif
