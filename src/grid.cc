@@ -69,21 +69,22 @@ void Grid::draw_vertical_lines(cairo_t *cr, double x, double y,
   double first_visible_beat_time, last_visible_beat_time;
   CalcFirstAndLastVisibleBeatTimes(start_time, end_time, tempo,
       &first_visible_beat_time, &last_visible_beat_time);
-
+    
   // Truncate last_visible_beat_time if longer than 
   // total_time
   TruncateLastVisibleBeatBasedOnTotalTime(
      &last_visible_beat_time, total_time, tempo);
   
-  assert (first_visible_beat_time <= last_visible_beat_time);
-  assert (first_visible_beat_time >= 0);
+  if (first_visible_beat_time >= last_visible_beat_time)
+    return;
+ 
+  assert (first_visible_beat_time >= start_time);
   
   double TotalPixels = w;
   double TotalSeconds = end_time - start_time;
   double PixelsPerSecond = TotalPixels / TotalSeconds;
   
   
-  //cout << start_time << " " << end_time << endl;
   cairo_set_line_width(cr, 1);
   for (double i = first_visible_beat_time - start_time;
        i <= last_visible_beat_time - start_time; i += 60.0/tempo) {
@@ -91,7 +92,7 @@ void Grid::draw_vertical_lines(cairo_t *cr, double x, double y,
     pixel_x = floor(pixel_x) + 0.5;
     cairo_move_to(cr, x+pixel_x, y);
     cairo_line_to(cr, x+pixel_x, y+h);
-  } //cout << endl;
+  } 
   cairo_set_source_rgb(cr, 1, 1, 1);
   cairo_stroke(cr);
 

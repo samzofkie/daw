@@ -148,17 +148,16 @@ void XWindow::handle_click(XEvent e)
     double new_end_time = (1-proportion) * x 
       + (proportion*end_time);
     double new_start_time = calc_start_time(x, new_end_time);
+    
     if (new_start_time < 0)
       new_start_time = 0;
-    
+     
     start_time = new_start_time;
     end_time = new_end_time;
     
     grid->draw(cr, track_head_width, header_height,
        window_width - track_head_width,
-       window_height - header_height); 
-         
-    //draw_grid();
+       window_height - header_height);  
     draw_tracks();          
   }
 

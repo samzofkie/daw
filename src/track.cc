@@ -50,7 +50,6 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
       pcm_start_time >= grid_start_time;
     bool end_visible = 
       pcm_end_time <= grid_end_time;
-    cout << start_visible << " " << end_visible << endl;
 
     double pcm_x = head_width + 
       (pcm_start_time - grid_start_time) * pixels_per_second;
@@ -63,9 +62,7 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
     cairo_fill(cr);
   } 
 
-  
-
-  
+   
   // Draw track head
   double side_space = parent_window->space_between_tracks/2;
   cairo_move_to(cr, head_width + 10, y);
