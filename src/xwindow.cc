@@ -16,7 +16,7 @@ using namespace std;
 
 
 XWindow::XWindow() :
-  window_width(1000), window_height(1000),
+  window_width(750), window_height(750),
   total_time(10),
   start_time(0),
   end_time(4),
@@ -154,6 +154,7 @@ void XWindow::handle_click(XEvent e)
      
     start_time = new_start_time;
     end_time = new_end_time;
+    cout << start_time << " " << end_time << endl;
     
     grid->draw(cr, track_head_width, header_height,
        window_width - track_head_width,

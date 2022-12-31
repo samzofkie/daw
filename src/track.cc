@@ -37,8 +37,7 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
   double head_width = parent_window->track_head_width; 
   double pixels_per_second = w / grid_total_time;
   
-  for (vector<PCM*>::size_type i=0; i < pcms.size(); i++) {
-    PCM* pcm = pcms[i];
+  for (PCM* pcm : pcms) {
     double pcm_start_time = pcm->start_time;
     double pcm_end_time = pcm_start_time + pcm->length;
     if (pcm_end_time < grid_start_time 
@@ -51,14 +50,17 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
     bool end_visible = 
       pcm_end_time <= grid_end_time;
 
+    double pcm_start_truncated_by_grid = max(0.0, pcm_start_time - grid_start_time); 
     double pcm_x = head_width + 
-      (pcm_start_time - grid_start_time) * pixels_per_second;
-    double pcm_y = y;
+      pcm_start_truncated_by_grid * pixels_per_second;
     double pcm_w = pcm->length * pixels_per_second;
-    double pcm_h = h;
+   
+    cout << pcm_x << endl;
+
+    cairo_rectangle(cr, pcm_x, y, pcm_w, h);
+    
     cairo_set_source_rgb(cr, pcm->color.c0,
         pcm->color.c1, pcm->color.c2);
-    cairo_rectangle(cr, pcm_x, pcm_y, pcm_w, pcm_h);
     cairo_fill(cr);
   } 
 
