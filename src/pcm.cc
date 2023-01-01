@@ -17,6 +17,7 @@ PCM::PCM(const char* filename, double srate) :
   color(RandomColor())
 {
   srand(time(NULL));
+  
   std::ifstream ifs (filename, std::ios::in | std::ios::binary); 
   if (!ifs) {
     std::cerr << "Failed to open " << filename << endl;

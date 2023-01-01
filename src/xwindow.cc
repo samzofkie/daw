@@ -154,7 +154,6 @@ void XWindow::handle_click(XEvent e)
      
     start_time = new_start_time;
     end_time = new_end_time;
-    cout << start_time << " " << end_time << endl;
     
     grid->draw(cr, track_head_width, header_height,
        window_width - track_head_width,
