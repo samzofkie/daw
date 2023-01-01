@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <complex>
+#include <cairo.h>
 
 struct WavHeader {
   uint32_t file_size;
@@ -30,9 +31,10 @@ class PCM
     struct Color {
       double c0, c1, c2;
     };
-
     Color color;
 
+    void draw(cairo_t*, double, double, double, double);
+  
   private:
     void read_wav_header(std::ifstream&);
     void print_wav_header(WavHeader);

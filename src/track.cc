@@ -47,14 +47,27 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
         || pcm_start_time > grid_end_time) {
       continue;
     }
+    
+    double grid_total_pixels = w - head_width;
+    double pixels_per_second = grid_total_pixels / grid_total_time;
+    
+    double pcm_first_visible_at_second = max(grid_start_time, pcm->start_time);
+    double pcm_last_visible_at_second = min(grid_end_time, pcm_end_time);
+
+    pcm->draw(cr, 
+        x + head_width + (pcm_first_visible_at_second - grid_start_time) * pixels_per_second,
+        y, 
+        (pcm_last_visible_at_second - grid_start_time) * pixels_per_second,
+        h);
 
     // Draw body
-    bool pcm_start_visible = 
+    /*bool pcm_start_visible = 
       pcm_start_time >= grid_start_time;
-    /*bool end_visible = 
-      pcm_end_time <= grid_end_time;*/
+    bool end_visible = 
+      pcm_end_time <= grid_end_time;
 
-    double pcm_start_truncated_by_grid = max(0.0, pcm_start_time - grid_start_time); 
+    double pcm_start_truncated_by_grid = 
+      max(0.0, pcm_start_time - grid_start_time); 
     double pcm_x = head_width + 
       pcm_start_truncated_by_grid * pixels_per_second;
     double pcm_w = pcm->length * pixels_per_second;
@@ -88,7 +101,7 @@ void Track::draw(cairo_t *cr, double x, double y, double w,
           y + sample_scaled_to_pixels);
     } cout << endl << endl;
     cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_stroke(cr);
+    cairo_stroke(cr); */
   
   } 
 

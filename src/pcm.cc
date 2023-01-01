@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <time.h>
+#include <cairo.h>
 
 #include "pcm.h"
 
@@ -36,8 +37,8 @@ PCM::PCM(const char* filename, double srate) :
 PCM::Color PCM::RandomColor()
 {
   Color c;
-  c.c0 = rand() / RAND_MAX;
-  c.c1 = rand() / RAND_MAX;
+  c.c0 = rand() / static_cast<double>(RAND_MAX);
+  c.c1 = rand() / static_cast<double>(RAND_MAX);
   c.c2 = 2.25 - c.c0 - c.c1;
   return c;
 }
@@ -91,6 +92,14 @@ void PCM::read_wav_data(ifstream& ifs)
             
     samples.push_back(a);
   }
+}
+
+
+void PCM::draw(cairo_t *cr, double x, double y, double w, double h) {
+  cairo_set_source_rgb(cr, color.c0, color.c1, color.c2);
+  cairo_rectangle(cr, x, y, w, h);
+  cairo_fill(cr);
+  
 }
 
 
